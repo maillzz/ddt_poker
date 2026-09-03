@@ -58,8 +58,8 @@
 
 ## Стэк
 Backend:
-  1.FastAPI
-  2.Pydantic
+1.FastAPI
+2.Pydantic
 остальное пока не решили
 ## Команда
 
