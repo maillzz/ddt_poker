@@ -1,24 +1,50 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from web import services
-from web.forms import TaskForm
-from web.models import Task
+from web.models import PokerHand
 
 
-def task_list(request):
-    tasks = Task.objects.all()[:50]
-    return render(request, "web/list.html", {"tasks": tasks})
+@login_required
+def hand_list(request):
+    hands = PokerHand.objects.filter(owner=request.user)[:50]
+
+    return render(
+        request,
+        "web/hand_list.html",
+        {"hands": hands},
+    )
 
 
-def task_create(request):
-    form = TaskForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        owner = request.user if request.user.is_authenticated else None
-        task = services.create_task(form.cleaned_data["name"], form.params(), owner=owner)
-        return redirect("task_detail", pk=task.pk)
-    return render(request, "web/form.html", {"form": form})
+@login_required
+def hand_create(request):
+    if request.method == "POST":
+        players_count = int(request.POST.get("players_count", 2))
+        pot_size = request.POST.get("pot_size", "0")
+        call_amount = request.POST.get("call_amount", "0")
+
+        hand = services.create_hand(
+            owner=request.user,
+            players_count=players_count,
+            pot_size=pot_size,
+            call_amount=call_amount,
+        )
+
+        return redirect("hand_detail", pk=hand.pk)
+
+    return render(request, "web/hand_form.html")
 
 
-def task_detail(request, pk: int):
-    task = get_object_or_404(Task, pk=pk)
-    return render(request, "web/detail.html", {"task": task})
+@login_required
+def hand_detail(request, pk: int):
+    hand = get_object_or_404(
+        PokerHand,
+        pk=pk,
+        owner=request.user,
+    )
+
+    return render(
+        request,
+        "web/hand_detail.html",
+        {"hand": hand},
+    )

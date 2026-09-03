@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Новая покерная раздача</title>
+</head>
+<body>
+    <h1>Новая покерная раздача</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <p>
+            <label for="players_count">Количество игроков:</label>
+            <input
+                type="number"
+                id="players_count"
+                name="players_count"
+                value="2"
+                min="2"
+                max="10"
+                required
+            >
+        </p>
+
+        <p>
+            <label for="pot_size">Размер банка:</label>
+            <input
+                type="number"
+                id="pot_size"
+                name="pot_size"
+                value="0"
+                min="0"
+                step="0.01"
+                required
+            >
+        </p>
+
+        <p>
+            <label for="call_amount">Сумма колла:</label>
+            <input
+                type="number"
+                id="call_amount"
+                name="call_amount"
+                value="0"
+                min="0"
+                step="0.01"
+                required
+            >
+        </p>
+
+        <button type="submit">Создать раздачу</button>
+    </form>
+
+    <p>
+        <a href="{% url 'hand_list' %}">← Назад к раздачам</a>
+    </p>
+</body>
+</html>

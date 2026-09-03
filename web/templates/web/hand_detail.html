@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Раздача #{{ hand.pk }}</title>
+</head>
+<body>
+
+    <h1>Покерная раздача #{{ hand.pk }}</h1>
+
+    <p>Стадия: {{ hand.stage }}</p>
+    <p>Количество игроков: {{ hand.players_count }}</p>
+    <p>Размер банка: {{ hand.pot_size }}</p>
+    <p>Сумма колла: {{ hand.call_amount }}</p>
+
+    <h2>Игроки</h2>
+
+    <ul>
+        {% for player in hand.players.all %}
+            <li>
+                Игрок {{ player.player_number }}
+                {% if player.is_hero %}
+                    — Hero
+                {% endif %}
+                — {{ player.status }}
+                — стек: {{ player.stack|default:"не указан" }}
+            </li>
+        {% empty %}
+            <li>Игроков пока нет.</li>
+        {% endfor %}
+    </ul>
+
+    <p>
+        <a href="{% url 'hand_list' %}">
+            ← Вернуться к списку раздач
+        </a>
+    </p>
+
+</body>
+</html>

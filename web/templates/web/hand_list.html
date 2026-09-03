@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Покерные раздачи</title>
+</head>
+<body>
+    <h1>Покерные раздачи</h1>
+
+    <p>
+        <a href="{% url 'hand_create' %}">Создать новую раздачу</a>
+    </p>
+
+    {% if hands %}
+        <ul>
+            {% for hand in hands %}
+                <li>
+                    <a href="{% url 'hand_detail' hand.pk %}">
+                        Раздача #{{ hand.pk }}
+                    </a>
+                    — {{ hand.stage }}
+                    — игроков: {{ hand.players_count }}
+                    — банк: {{ hand.pot_size }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Раздач пока нет.</p>
+    {% endif %}
+</body>
+</html>

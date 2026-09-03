@@ -1,38 +1,144 @@
 """
-Сервисный слой (занятие 7): прикладная логика между views/API и ядром.
-Views и API не вызывают core напрямую и не меняют статусы задач сами — только через сервисы.
+Сервисный слой покерного приложения.
+
+Views/API работают с прикладной логикой через этот слой,
+а не создают и не изменяют покерные сущности напрямую.
 """
-from django.conf import settings
+
+from django.db import transaction
 from django.utils import timezone
 
-from core import VERSION, run
-from web.models import Task
+from web.models import (
+    Card,
+    HandAction,
+    HandPlayer,
+    PokerHand,
+    Recommendation,
+    SimulationRequest,
+    SimulationResult,
+    Strategy,
+)
 
 
-def create_task(name: str, params: dict, owner=None) -> Task:
-    task = Task.objects.create(name=name, params=params, owner=owner)
-    if settings.USE_QUEUE:
-        from web.jobs import enqueue_task  # заезд 2
+@transaction.atomic
+def create_hand(
+    *,
+    owner,
+    players_count: int,
+    pot_size=0,
+    call_amount=0,
+) -> PokerHand:
+    """Создаёт новую покерную раздачу."""
+    hand = PokerHand.objects.create(
+        owner=owner,
+        players_count=players_count,
+        pot_size=pot_size,
+        call_amount=call_amount,
+    )
 
-        enqueue_task(task.pk)
-    else:
-        execute_task(task.pk)  # заезд 1: синхронно, прямо в запросе (и это архитектурная проблема — см. занятие 11)
-        task.refresh_from_db()
-    return task
+    return hand
 
 
-def execute_task(task_id: int) -> None:
-    """Выполняет расчёт. Вызывается синхронно (заезд 1) или воркером очереди (заезд 2)."""
-    task = Task.objects.get(pk=task_id)
-    task.status = Task.Status.RUNNING
-    task.save(update_fields=["status"])
+@transaction.atomic
+def add_player(
+    *,
+    hand: PokerHand,
+    player_number: int,
+    is_hero: bool = False,
+    stack=None,
+) -> HandPlayer:
+    """Добавляет игрока в раздачу."""
+    return HandPlayer.objects.create(
+        hand=hand,
+        player_number=player_number,
+        is_hero=is_hero,
+        stack=stack,
+    )
+
+
+@transaction.atomic
+def add_card(
+    *,
+    hand: PokerHand,
+    card_code: str,
+    location: str,
+    player: HandPlayer | None = None,
+) -> Card:
+    """Добавляет карту в раздачу."""
+    return Card.objects.create(
+        hand=hand,
+        player=player,
+        card_code=card_code,
+        location=location,
+    )
+
+
+@transaction.atomic
+def add_action(
+    *,
+    hand: PokerHand,
+    player: HandPlayer,
+    action_type: str,
+    amount=0,
+    street: str,
+) -> HandAction:
+    """Добавляет действие игрока."""
+    return HandAction.objects.create(
+        hand=hand,
+        player=player,
+        action_type=action_type,
+        amount=amount,
+        street=street,
+    )
+
+
+@transaction.atomic
+def create_simulation(
+    *,
+    hand: PokerHand,
+    strategy: Strategy | None = None,
+    simulation_count: int = 10000,
+) -> SimulationRequest:
+    """Создаёт запрос на симуляцию."""
+    return SimulationRequest.objects.create(
+        hand=hand,
+        strategy=strategy,
+        simulation_count=simulation_count,
+    )
+
+
+def execute_simulation(simulation_id: int) -> SimulationRequest:
+    """
+    Выполняет симуляцию.
+
+    На данном этапе это граница между Django и покерным
+    вычислительным ядром. Реальную Monte Carlo-логику
+    подключим следующим этапом.
+    """
+    simulation = SimulationRequest.objects.select_related(
+        "hand",
+        "strategy",
+    ).get(pk=simulation_id)
+
+    simulation.status = SimulationRequest.Status.RUNNING
+    simulation.started_at = timezone.now()
+    simulation.save(update_fields=["status", "started_at"])
+
     try:
-        result = run(task.params)
-        task.result = result
-        task.core_version = result.get("core_version", VERSION)
-        task.status = Task.Status.DONE
-    except Exception as exc:  # noqa: BLE001 — граница слоя: ошибка ядра превращается в статус, а не в 500
-        task.error = str(exc)
-        task.status = Task.Status.FAILED
-    task.finished_at = timezone.now()
-    task.save()
+        # TODO: подключить настоящее покерное ядро симуляции.
+        #
+        # Здесь должны появиться:
+        # - расчёт wins / ties / losses;
+        # - win_probability / tie_probability / loss_probability;
+        # - expected_value;
+        # - Recommendation.
+
+        raise NotImplementedError(
+            "Покерное вычислительное ядро ещё не подключено."
+        )
+
+    except Exception:
+        simulation.status = SimulationRequest.Status.FAILED
+        simulation.completed_at = timezone.now()
+        simulation.save(update_fields=["status", "completed_at"])
+        raise
