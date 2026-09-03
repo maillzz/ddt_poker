@@ -1,0 +1,322 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 960" width="100%" height="100%">
+  <defs>
+    <!-- Стрелка для связей -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#3b82f6" />
+    </marker>
+    <marker id="arrow-warn" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#ef4444" />
+    </marker>
+    <!-- Тень для карточек -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <style>
+    .entity-box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 8px; }
+    .header-box { fill: #1e293b; rx: 8px 8px 0 0; }
+    .header-text { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; font-weight: 700; font-size: 15px; fill: #f8fafc; }
+    .col-pk { font-family: 'Consolas', 'Fira Code', monospace; font-size: 11px; font-weight: 700; fill: #d97706; }
+    .col-fk { font-family: 'Consolas', 'Fira Code', monospace; font-size: 11px; font-weight: 700; fill: #2563eb; }
+    .col-name { font-family: 'Consolas', 'Fira Code', monospace; font-size: 12px; font-weight: 600; fill: #0f172a; }
+    .col-type { font-family: 'Consolas', 'Fira Code', monospace; font-size: 11px; fill: #64748b; }
+    .comment-text { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 10.5px; fill: #64748b; font-style: italic; }
+    .card-line { stroke: #f1f5f9; stroke-width: 1; }
+    .rel-line { stroke: #3b82f6; stroke-width: 2; fill: none; stroke-linejoin: round; }
+    .rel-badge { fill: #eff6ff; stroke: #bfdbfe; stroke-width: 1; rx: 4px; }
+    .rel-text { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; }
+  </style>
+
+  <!-- Фон диаграммы -->
+  <rect width="1280" height="960" fill="#f8fafc" />
+
+  <!-- Заголовок документа -->
+  <g transform="translate(60, 45)">
+    <text x="0" y="0" font-family="'Segoe UI', Roboto, sans-serif" font-size="24px" font-weight="800" fill="#0f172a">
+      ER-ДИАГРАММА: DDT_POKER
+    </text>
+    <text x="0" y="22" font-family="'Segoe UI', Roboto, sans-serif" font-size="13px" fill="#475569">
+      Концептуальная и физическая схема данных проекта (web/models.py, миграция 0002)
+    </text>
+  </g>
+
+  <!-- ==================== СВЯЗИ (ЛИНИИ) ==================== -->
+  
+  <!-- POKER_HAND -> HAND_PLAYER (1 : N) -->
+  <path d="M 360 210 L 460 210" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(385, 195)">
+    <rect class="rel-badge" x="0" y="0" width="48" height="20" />
+    <text class="rel-text" x="24" y="14">1 : N</text>
+  </g>
+
+  <!-- POKER_HAND -> HAND_ACTION (1 : N) -->
+  <path d="M 210 395 L 210 490 L 460 490" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(310, 475)">
+    <rect class="rel-badge" x="0" y="0" width="48" height="20" />
+    <text class="rel-text" x="24" y="14">1 : N</text>
+  </g>
+
+  <!-- HAND_PLAYER -> HAND_ACTION (1 : N) -->
+  <path d="M 610 385 L 610 440" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(618, 400)">
+    <rect class="rel-badge" x="0" y="0" width="48" height="20" />
+    <text class="rel-text" x="24" y="14">1 : N</text>
+  </g>
+
+  <!-- POKER_HAND -> CARD (Board) (1 : N) -->
+  <path d="M 210 115 L 210 80 L 1020 80 L 1020 180" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(560, 68)">
+    <rect class="rel-badge" x="0" y="0" width="130" height="22" />
+    <text class="rel-text" x="65" y="15">1 : N (общий борд)</text>
+  </g>
+
+  <!-- HAND_PLAYER -> CARD (Hole cards) (1 : N) -->
+  <path d="M 760 230 L 870 230" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(775, 215)">
+    <rect class="rel-badge" x="0" y="0" width="80" height="20" />
+    <text class="rel-text" x="40" y="14">1 : N (карман)</text>
+  </g>
+
+  <!-- POKER_HAND -> STRATEGY (1 : 1) -->
+  <path d="M 210 395 L 210 630" class="rel-line" marker-end="url(#arrow)" />
+  <g transform="translate(218, 500)">
+    <rect class="rel-badge" x="0" y="0" width="48" height="20" />
+    <text class="rel-text" x="24" y="14">1 : 1</text>
+  </g>
+
+  <!-- ==================== ТАБЛИЦА 1: POKER_HAND ==================== -->
+  <g transform="translate(60, 115)" filter="url(#shadow)">
+    <rect class="entity-box" width="300" height="280" />
+    <rect class="header-box" width="300" height="38" />
+    <text class="header-text" x="16" y="24">POKER_HAND (Раздача)</text>
+    
+    <g transform="translate(16, 62)">
+      <text class="col-pk" x="0" y="0">PK</text>
+      <text class="col-name" x="30" y="0">id</text>
+      <text class="col-type" x="140" y="0">BigAutoField</text>
+      <text class="comment-text" x="0" y="14">// Первичный ключ раздачи</text>
+      <line x1="0" y1="22" x2="268" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 106)">
+      <text class="col-name" x="30" y="0">title</text>
+      <text class="col-type" x="140" y="0">CharField(128)</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 138)">
+      <text class="col-name" x="30" y="0">game_type</text>
+      <text class="col-type" x="140" y="0">CharField(32)</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 170)">
+      <text class="col-name" x="30" y="0">small_blind</text>
+      <text class="col-type" x="140" y="0">DecimalField</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 202)">
+      <text class="col-name" x="30" y="0">big_blind</text>
+      <text class="col-type" x="140" y="0">DecimalField</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 234)">
+      <text class="col-name" x="30" y="0">status</text>
+      <text class="col-type" x="140" y="0">CharField(32)</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 264)">
+      <text class="col-name" x="30" y="0">created_at</text>
+      <text class="col-type" x="140" y="0">DateTimeField</text>
+    </g>
+  </g>
+
+  <!-- ==================== ТАБЛИЦА 2: HAND_PLAYER ==================== -->
+  <g transform="translate(460, 115)" filter="url(#shadow)">
+    <rect class="entity-box" width="300" height="270" />
+    <rect class="header-box" width="300" height="38" />
+    <text class="header-text" x="16" y="24">HAND_PLAYER (Игрок за столом)</text>
+    
+    <g transform="translate(16, 62)">
+      <text class="col-pk" x="0" y="0">PK</text>
+      <text class="col-name" x="30" y="0">id</text>
+      <text class="col-type" x="140" y="0">BigAutoField</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 94)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">hand_id</text>
+      <text class="col-type" x="140" y="0">BigInteger -> Hand</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 126)">
+      <text class="col-name" x="30" y="0">name</text>
+      <text class="col-type" x="140" y="0">CharField(64)</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 158)">
+      <text class="col-name" x="30" y="0">seat_number</text>
+      <text class="col-type" x="140" y="0">PositiveIntegerField</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 190)">
+      <text class="col-name" x="30" y="0">stack</text>
+      <text class="col-type" x="140" y="0">DecimalField</text>
+      <line x1="0" y1="12" x2="268" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 222)">
+      <text class="col-name" x="30" y="0">position</text>
+      <text class="col-type" x="140" y="0">CharField(8)</text>
+      <text class="comment-text" x="0" y="14">// BTN, SB, BB, UTG, MP, CO</text>
+    </g>
+  </g>
+
+  <!-- ==================== ТАБЛИЦА 3: CARD ==================== -->
+  <g transform="translate(870, 180)" filter="url(#shadow)">
+    <rect class="entity-box" width="350" height="260" />
+    <rect class="header-box" width="350" height="38" />
+    <text class="header-text" x="16" y="24">CARD (Карта)</text>
+    
+    <g transform="translate(16, 62)">
+      <text class="col-pk" x="0" y="0">PK</text>
+      <text class="col-name" x="30" y="0">id</text>
+      <text class="col-type" x="140" y="0">BigAutoField</text>
+      <line x1="0" y1="12" x2="318" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 94)">
+      <text class="col-name" x="30" y="0">rank</text>
+      <text class="col-type" x="140" y="0">CharField(2) [2..A]</text>
+      <line x1="0" y1="12" x2="318" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 126)">
+      <text class="col-name" x="30" y="0">suit</text>
+      <text class="col-type" x="140" y="0">CharField(1) [s,h,d,c]</text>
+      <line x1="0" y1="12" x2="318" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 158)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">hand_id</text>
+      <text class="col-type" x="140" y="0">BigInteger (Nullable)</text>
+      <text class="comment-text" x="0" y="14">// Заполнено, если карта на борде</text>
+      <line x1="0" y1="22" x2="318" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 200)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">player_id</text>
+      <text class="col-type" x="140" y="0">BigInteger (Nullable)</text>
+      <text class="comment-text" x="0" y="14">// Заполнено, если карманная карта</text>
+    </g>
+  </g>
+
+  <!-- ==================== ТАБЛИЦА 4: HAND_ACTION ==================== -->
+  <g transform="translate(460, 440)" filter="url(#shadow)">
+    <rect class="entity-box" width="340" height="280" />
+    <rect class="header-box" width="340" height="38" />
+    <text class="header-text" x="16" y="24">HAND_ACTION (Действие в торгах)</text>
+    
+    <g transform="translate(16, 62)">
+      <text class="col-pk" x="0" y="0">PK</text>
+      <text class="col-name" x="30" y="0">id</text>
+      <text class="col-type" x="140" y="0">BigAutoField</text>
+      <line x1="0" y1="12" x2="308" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 94)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">hand_id</text>
+      <text class="col-type" x="140" y="0">BigInteger -> Hand</text>
+      <line x1="0" y1="12" x2="308" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 126)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">player_id</text>
+      <text class="col-type" x="140" y="0">BigInteger -> Player</text>
+      <line x1="0" y1="12" x2="308" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 158)">
+      <text class="col-name" x="30" y="0">street</text>
+      <text class="col-type" x="140" y="0">CharField(16)</text>
+      <text class="comment-text" x="0" y="14">// preflop, flop, turn, river</text>
+      <line x1="0" y1="22" x2="308" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 200)">
+      <text class="col-name" x="30" y="0">action_type</text>
+      <text class="col-type" x="140" y="0">CharField(16)</text>
+      <text class="comment-text" x="0" y="14">// check, call, bet, raise, fold</text>
+      <line x1="0" y1="22" x2="308" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 242)">
+      <text class="col-name" x="30" y="0">amount</text>
+      <text class="col-type" x="140" y="0">DecimalField</text>
+      <text class="col-name" x="220" y="0">order</text>
+      <text class="col-type" x="270" y="0">int</text>
+    </g>
+  </g>
+
+  <!-- ==================== ТАБЛИЦА 5: STRATEGY ==================== -->
+  <g transform="translate(60, 630)" filter="url(#shadow)">
+    <rect class="entity-box" width="320" height="280" />
+    <rect class="header-box" width="320" height="38" />
+    <text class="header-text" x="16" y="24">STRATEGY (Результат солвера)</text>
+    
+    <g transform="translate(16, 62)">
+      <text class="col-pk" x="0" y="0">PK</text>
+      <text class="col-name" x="30" y="0">id</text>
+      <text class="col-type" x="150" y="0">BigAutoField</text>
+      <line x1="0" y1="12" x2="288" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 94)">
+      <text class="col-fk" x="0" y="0">FK</text>
+      <text class="col-name" x="30" y="0">hand_id</text>
+      <text class="col-type" x="150" y="0">BigInteger (OneToOne)</text>
+      <line x1="0" y1="12" x2="288" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 126)">
+      <text class="col-name" x="30" y="0">solver_status</text>
+      <text class="col-type" x="150" y="0">CharField(32)</text>
+      <line x1="0" y1="12" x2="288" y2="12" class="card-line" />
+    </g>
+    <g transform="translate(16, 158)">
+      <text class="col-name" x="30" y="0" style="fill: #dc2626; font-weight: 700;">result_file_path</text>
+      <text class="col-type" x="150" y="0">CharField(512)</text>
+      <text class="comment-text" x="0" y="14" style="fill: #b91c1c;">// Путь к файлу на диске / S3</text>
+      <line x1="0" y1="22" x2="288" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 200)">
+      <text class="col-name" x="30" y="0">summary_metrics</text>
+      <text class="col-type" x="150" y="0">JSONField</text>
+      <text class="comment-text" x="0" y="14">// Легковесный отчет (EV, частоты)</text>
+      <line x1="0" y1="22" x2="288" y2="22" class="card-line" />
+    </g>
+    <g transform="translate(16, 242)">
+      <text class="col-name" x="30" y="0">calculated_at</text>
+      <text class="col-type" x="150" y="0">DateTimeField</text>
+    </g>
+  </g>
+
+  <!-- ==================== ВЫНОСКА: БОЛЬШИЕ ДАННЫЕ ==================== -->
+  <!-- Стрелка к выноске -->
+  <path d="M 380 788 L 460 788" style="stroke: #ef4444; stroke-width: 2; stroke-dasharray: 6 4; fill: none;" marker-end="url(#arrow-warn)" />
+
+  <g transform="translate(460, 740)" filter="url(#shadow)">
+    <rect width="760" height="170" rx="8" fill="#fff1f2" stroke="#fda4af" stroke-width="2" />
+    
+    <g transform="translate(24, 30)">
+      <rect width="20" height="20" rx="10" fill="#e11d48" />
+      <text x="7" y="15" font-family="sans-serif" font-weight="bold" font-size="14" fill="#ffffff">!</text>
+      <text x="32" y="16" font-family="'Segoe UI', Roboto, sans-serif" font-size="16px" font-weight="700" fill="#9f1239">
+        ОТВЕТ ДЛЯ ПРОВЕРКИ: ГДЕ БОЛЬШИЕ ДАННЫЕ (ФАЙЛ VS ТАБЛИЦА) И ПОЧЕМУ ТАМ?
+      </text>
+    </g>
+
+    <text x="24" y="80" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5px" fill="#881337">
+      <tspan font-weight="700">1. Что за данные:</tspan> Дерево решений солвера (GTO game tree), матрицы частот и диапазонов (размер от 50 МБ до 2+ ГБ).
+    </text>
+
+    <text x="24" y="108" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5px" fill="#881337">
+      <tspan font-weight="700">2. Где хранятся:</tspan> В файловой системе / S3. В таблице <tspan font-family="monospace" font-weight="700">STRATEGY</tspan> хранится только путь <tspan font-family="monospace" font-weight="700">result_file_path</tspan> и краткие метрики.
+    </text>
+
+    <text x="24" y="136" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5px" fill="#881337">
+      <tspan font-weight="700">3. Почему не в БД:</tspan> Хранение таких объемов переполняет SQLite/PostgreSQL shared buffers, раздувает WAL и бэкапы.
+      Паттерн доступа — потоковое чтение/запись целиком, реляционный поиск по узлам дерева внутри базы не нужен.
+    </text>
+  </g>
+</svg>

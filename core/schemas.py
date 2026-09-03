@@ -1,44 +1,43 @@
-"""
-Контракт ядра: что принимаем на вход, что отдаём на выход.
-Валидация входа — ДО запуска расчёта (занятие 11): плохие данные не должны доходить до численного метода.
-"""
-from pydantic import BaseModel, Field, field_validator
-
-# Разрешённые функции — фиксированный список, а не eval() строки от пользователя (занятие 14: безопасность).
-FUNCTIONS = ["sin", "cos", "exp", "x2", "sqrt", "gauss"]
+from pydantic import BaseModel, Field
 
 
-class IntegrateParams(BaseModel):
-    function: str = Field(description="Одна из: " + ", ".join(FUNCTIONS))
-    a: float = Field(description="Левая граница")
-    b: float = Field(description="Правая граница")
-    n: int = Field(default=1000, ge=2, le=50_000_000, description="Число разбиений (чётное)")
-    method: str = Field(default="simpson", description="trapezoid | simpson")
+class PokerParams(BaseModel):
+    hole_cards: list[str] = Field(
+        description="Две закрытые карты игрока, например ['As', 'Kh']"
+    )
+    community_cards: list[str] = Field(
+        default_factory=list,
+        description="Открытые карты стола, от 0 до 5 карт"
+    )
+    opponents: int = Field(
+        default=1,
+        ge=1,
+        le=9,
+        description="Количество противников"
+    )
+    pot: float = Field(
+        default=0,
+        ge=0,
+        description="Размер текущего банка"
+    )
+    call_amount: float = Field(
+        default=0,
+        ge=0,
+        description="Размер ставки для колла"
+    )
+    simulations: int = Field(
+        default=10_000,
+        ge=100,
+        le=1_000_000,
+        description="Количество симуляций"
+    )
 
-    @field_validator("function")
-    @classmethod
-    def _check_function(cls, v: str) -> str:
-        if v not in FUNCTIONS:
-            raise ValueError(f"Неизвестная функция '{v}'. Допустимо: {', '.join(FUNCTIONS)}")
-        return v
 
-    @field_validator("method")
-    @classmethod
-    def _check_method(cls, v: str) -> str:
-        if v not in ("trapezoid", "simpson"):
-            raise ValueError("method должен быть 'trapezoid' или 'simpson'")
-        return v
-
-    @field_validator("n")
-    @classmethod
-    def _even(cls, v: int) -> int:
-        return v if v % 2 == 0 else v + 1
-
-
-class IntegrateResult(BaseModel):
-    value: float
-    error_estimate: float
-    method: str
-    n: int
+class PokerResult(BaseModel):
+    win_probability: float
+    tie_probability: float
+    loss_probability: float
+    ev: float
+    recommendation: str
+    simulations: int
     core_version: str
-    points: list[list[float]] = Field(description="Выборка [x, f(x)] для графика (не более 200 точек)")
