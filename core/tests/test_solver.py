@@ -1,40 +1,23 @@
-"""
-Тесты ядра на ЭТАЛОНАХ: задачи с известным точным ответом. Без Django, без БД, без HTTP.
-Замените на эталоны своей задачи (аналитическое решение, справочные значения, sympy).
-"""
-import math
+# core/tests/test_solver.py
+from core.solver import hand_rank, run
 
-import pytest
-
-from core import run
-from core.schemas import FUNCTIONS
+PAIR = ["As", "Ad", "7c", "5h", "2d"]  # пара тузов
+HIGH = ["Ks", "Qd", "9c", "5h", "2d"]  # только старшая карта
 
 
-def test_sin_on_0_pi_equals_2():
-    r = run({"function": "sin", "a": 0, "b": math.pi, "n": 1000})
-    assert abs(r["value"] - 2.0) < 1e-6
+def test_pair_beats_high_card():
+    # эталон: правило игры — известно до первой строки кода
+    assert hand_rank(PAIR) > hand_rank(HIGH)
 
 
-def test_x2_on_0_1_equals_one_third():
-    r = run({"function": "x2", "a": 0, "b": 1, "n": 100, "method": "trapezoid"})
-    assert abs(r["value"] - 1 / 3) < 1e-4
-
-
-def test_error_estimate_is_small_and_positive():
-    r = run({"function": "exp", "a": 0, "b": 1, "n": 200})
-    assert 0 <= r["error_estimate"] < 1e-6
-
-
-def test_unknown_function_is_rejected_before_compute():
-    with pytest.raises(ValueError):
-        run({"function": "__import__('os')", "a": 0, "b": 1})
-
-
-def test_points_are_limited_for_plot():
-    r = run({"function": "cos", "a": 0, "b": 1, "n": 100_000})
-    assert len(r["points"]) <= 202
-
-
-def test_all_functions_run():
-    for fn in FUNCTIONS:
-        run({"function": fn, "a": 0.1, "b": 1, "n": 10})
+def test_aa_wins_about_85_percent():
+    # эталон: справочная таблица шансов, поэтому ДИАПАЗОН
+    r = run(
+        {
+            "hole_cards": ["As", "Ah"],
+            "opponents": 1,
+            "simulations": 10_000,
+            "seed": 1,
+        }
+    )
+    assert 0.80 < r["win_probability"] < 0.90

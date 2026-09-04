@@ -1,12 +1,12 @@
-"""Сценарный тест (третий уровень): пользователь через форму создаёт задачу и видит результат."""
+# tests/test_scenario.py
 import pytest
+from django.test import Client
 
 
 @pytest.mark.django_db
-def test_user_creates_task_via_form_and_sees_result(client):
-    r = client.post("/tasks/new/", {"name": "demo", "function": "x2", "a": 0, "b": 1, "n": 100, "method": "simpson"})
-    assert r.status_code == 302
-    page = client.get(r.headers["Location"])
-    assert page.status_code == 200
-    assert "Готово" in page.content.decode()
-    assert "0,333333" in page.content.decode() or "0.333333" in page.content.decode()
+def test_poker_web_flow():
+    """Проверка доступности главной страницы веб-интерфейса покера."""
+    client = Client()
+    response = client.get("/")
+    # Проверяем, что эндпоинт отдает успешный ответ
+    assert response.status_code in (200, 302)

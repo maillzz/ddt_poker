@@ -1,119 +1,54 @@
 from django.contrib import admin
+from web.models import Card, HandAction, HandPlayer, PokerHand, Strategy, Task
 
-from .models import (
-    Card,
-    HandAction,
-    HandPlayer,
-    PokerHand,
-    Recommendation,
-    SimulationRequest,
-    SimulationResult,
-    Strategy,
-)
+
+class HandPlayerInline(admin.TabularInline):
+    model = HandPlayer
+    extra = 0
+
+
+class HandActionInline(admin.TabularInline):
+    model = HandAction
+    extra = 0
+
+
+class CardInline(admin.TabularInline):
+    model = Card
+    extra = 0
 
 
 @admin.register(PokerHand)
 class PokerHandAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "owner",
-        "stage",
-        "players_count",
-        "pot_size",
-        "call_amount",
-        "created_at",
-    )
-    list_filter = ("stage",)
-    search_fields = ("owner__username", "owner__email")
+    list_display = ("id", "current_street", "pot", "created_at")
+    list_filter = ("current_street",)
+    inlines = [HandPlayerInline, CardInline, HandActionInline]
 
 
 @admin.register(HandPlayer)
 class HandPlayerAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "hand",
-        "player_number",
-        "is_hero",
-        "stack",
-        "status",
-    )
-    list_filter = ("status", "is_hero")
+    list_display = ("id", "hand", "name", "position", "stack", "is_active")
+    list_filter = ("position", "is_active")
 
 
 @admin.register(Card)
 class CardAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "hand",
-        "player",
-        "card_code",
-        "location",
-    )
-    list_filter = ("location",)
-    search_fields = ("card_code",)
+    list_display = ("id", "rank", "suit", "hand", "player")
+    list_filter = ("suit", "rank")
 
 
 @admin.register(HandAction)
 class HandActionAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "hand",
-        "player",
-        "action_type",
-        "amount",
-        "street",
-        "created_at",
-    )
-    list_filter = ("action_type", "street")
+    list_display = ("id", "hand", "player", "street", "action_type", "amount", "order")
+    list_filter = ("street", "action_type")
 
 
 @admin.register(Strategy)
 class StrategyAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "name",
-        "fold_threshold",
-        "call_threshold",
-        "raise_threshold",
-    )
-    search_fields = ("name",)
+    list_display = ("id", "hand", "status", "created_at")
+    list_filter = ("status",)
 
 
-@admin.register(SimulationRequest)
-class SimulationRequestAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "hand",
-        "strategy",
-        "simulation_count",
-        "status",
-        "created_at",
-        "completed_at",
-    )
-    list_filter = ("status", "strategy")
-
-
-@admin.register(SimulationResult)
-class SimulationResultAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "simulation",
-        "iterations",
-        "wins",
-        "ties",
-        "losses",
-        "expected_value",
-    )
-
-
-@admin.register(Recommendation)
-class RecommendationAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "simulation",
-        "action",
-        "expected_value",
-        "confidence",
-        "created_at",
-    )
-    list_filter = ("action",)
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "status", "created_at")
+    list_filter = ("status",)
