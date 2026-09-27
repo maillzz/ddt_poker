@@ -23,6 +23,12 @@ class PokerTaskForm(forms.Form):
         max_value=200000,
     )
     seed = forms.IntegerField(label="Seed", required=False)
+    pot_size = forms.FloatField(
+        label="Размер банка", initial=0, min_value=0, required=False
+    )
+    call_amount = forms.FloatField(
+        label="Сумма для колла", initial=0, min_value=0, required=False
+    )
 
     def clean_hole_cards(self):
         cards = self.cleaned_data["hole_cards"].split()

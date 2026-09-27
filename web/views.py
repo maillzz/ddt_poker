@@ -1,50 +1,49 @@
-from django.contrib.auth.decorators import login_required
+from pydantic import ValidationError
+
 from django.shortcuts import get_object_or_404, redirect, render
 
+from core.schemas import PokerParams
 from web import services
-from web.models import PokerHand
+from web.forms import PokerTaskForm
+from web.models import Task
 
 
-@login_required
-def hand_list(request):
-    hands = PokerHand.objects.filter(owner=request.user)[:50]
-
-    return render(
-        request,
-        "web/hand_list.html",
-        {"hands": hands},
-    )
+def task_list(request):
+    tasks = services.list_tasks()[:50]
+    return render(request, "web/list.html", {"tasks": tasks})
 
 
-@login_required
-def hand_create(request):
+def task_create(request):
     if request.method == "POST":
-        players_count = int(request.POST.get("players_count", 2))
-        pot_size = request.POST.get("pot_size", "0")
-        call_amount = request.POST.get("call_amount", "0")
+        form = PokerTaskForm(request.POST)
+        if form.is_valid():
+            try:
+                # Валидация pydantic-схемой ДО запуска расчёта (см. AGENTS.md, п.4) —
+                # той же самой, что использует API, чтобы форма и API считали одинаково.
+                validated = PokerParams(
+                    hole_cards=form.cleaned_data["hole_cards"],
+                    community=form.cleaned_data["community"],
+                    opponents=form.cleaned_data["opponents"],
+                    simulations=form.cleaned_data["simulations"],
+                    seed=form.cleaned_data["seed"],
+                    pot_size=form.cleaned_data["pot_size"] or 0,
+                    call_amount=form.cleaned_data["call_amount"] or 0,
+                )
+            except ValidationError as exc:
+                form.add_error(None, str(exc))
+            else:
+                name = "{} против {}".format(
+                    " ".join(validated.hole_cards), validated.opponents
+                )
+                task = services.create_and_run(
+                    name=name, params=validated.model_dump()
+                )
+                return redirect("task_detail", pk=task.pk)
+    else:
+        form = PokerTaskForm()
+    return render(request, "web/form.html", {"form": form})
 
-        hand = services.create_hand(
-            owner=request.user,
-            players_count=players_count,
-            pot_size=pot_size,
-            call_amount=call_amount,
-        )
 
-        return redirect("hand_detail", pk=hand.pk)
-
-    return render(request, "web/hand_form.html")
-
-
-@login_required
-def hand_detail(request, pk: int):
-    hand = get_object_or_404(
-        PokerHand,
-        pk=pk,
-        owner=request.user,
-    )
-
-    return render(
-        request,
-        "web/hand_detail.html",
-        {"hand": hand},
-    )
+def task_detail(request, pk: int):
+    task = get_object_or_404(Task, pk=pk)
+    return render(request, "web/detail.html", {"task": task})
