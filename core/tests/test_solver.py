@@ -11,7 +11,7 @@ def test_pair_beats_high_card():
 
 
 def test_aa_wins_about_85_percent():
-    # эталон: справочная таблица шансов, поэтому ДИАПАЗОН
+    # эталон: справочная таблица шансов (heads-up AA ~85% winrate), поэтому ДИАПАЗОН
     r = run(
         {
             "hole_cards": ["As", "Ah"],
@@ -21,3 +21,21 @@ def test_aa_wins_about_85_percent():
         }
     )
     assert 0.80 < r["win_probability"] < 0.90
+
+
+def test_quads_on_board_is_always_a_tie():
+    # эталон: каре тузов на столе + кикер-король — сильнее уже не собрать
+    # ни герою, ни оппоненту (все 4 туза уже разобраны), поэтому ответ
+    # известен ТОЧНО заранее: 100% ничья при любом количестве раздач.
+    r = run(
+        {
+            "hole_cards": ["2s", "3s"],
+            "community": ["Ah", "Ad", "As", "Ac", "Kh"],
+            "opponents": 1,
+            "simulations": 2_000,
+            "seed": 42,
+        }
+    )
+    assert r["tie_probability"] == 1.0
+    assert r["win_probability"] == 0.0
+    assert r["loss_probability"] == 0.0

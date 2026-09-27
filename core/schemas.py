@@ -9,6 +9,9 @@ class PokerParams(BaseModel):
     opponents: int = Field(default=1, ge=1, le=9)
     simulations: int = Field(default=10_000, ge=100, le=200_000)
     seed: Optional[int] = Field(default=None)
+    # Нужны только для рекомендации RAISE/CALL/FOLD (см. core/solver.py:_recommend).
+    pot_size: float = Field(default=0.0, ge=0)
+    call_amount: float = Field(default=0.0, ge=0)
 
 
 TaskInParams = PokerParams
