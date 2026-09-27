@@ -81,12 +81,12 @@
 
 ---
 
-## 👥 Команда
+## 👥 Команда и вклад
 
-- **Супаев Висхан** 
-- **Харцаев Муслим** 
-- **Асхабов Дени** 
-- **Мустафаев Зелим** 
+- **Супаев Висхан** — вычислительное ядро: Монте-Карло симуляция раздачи и оценка комбинаций через `treys` (`core/solver.py`), эталонные тесты ядра, включая детерминированный случай с известным заранее ответом (`core/tests/test_solver.py`).
+- **Харцаев Муслим** — веб-слой: форма ввода параметров раздачи и её валидация (`web/forms.py`), вьюхи и шаблоны результата (`web/views.py`, `templates/web/`).
+- **Асхабов Дени** — API и сервисный слой: REST-эндпоинты (`api/api.py`), связка задач с ядром и жизненный цикл статуса задачи (`web/services.py`).
+- **Мустафаев Зелим** — инфраструктура и тестирование: Docker/docker-compose, очередь Redis/RQ (`web/jobs.py`), сквозные тесты формы (`tests/test_scenario.py`, `tests/test_api.py`).
 
 ---
 
@@ -94,11 +94,22 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/your-org/poker-monte-carlo.git
-cd poker-monte-carlo
+git clone https://github.com/maillzz/ddt_poker.git
+cd ddt_poker
 
-# Установка зависимостей
+# Установка зависимостей (включая treys — оценку покерных комбинаций)
 pip install -r requirements.txt
 
-# Запуск сервера разработки
-uvicorn main:app --reload
+# Применение миграций и запуск сервера разработки
+python manage.py migrate
+python manage.py runserver
+```
+
+Веб-интерфейс: `http://127.0.0.1:8000/` (форма → расчёт → результат).
+REST API и Swagger UI: `http://127.0.0.1:8000/api/docs`.
+
+### ✅ Тесты
+
+```bash
+pytest -q
+```
