@@ -2,8 +2,12 @@
 
 Правило проекта (см. AGENTS.md): views и API не содержат бизнес-логики и не
 вызывают core напрямую — только через эти функции. Статус задачи меняется
-только в execute_task (синхронный путь) и web/jobs.py:enqueue_task (очередь).
+только в execute_task (фоновый поток) и web/jobs.py:enqueue_task (очередь).
 """
+import threading
+
+from django.db import connection, transaction
+
 from core.solver import run as solve_poker
 from web.models import Task
 
@@ -46,10 +50,25 @@ def execute_task(task_id: int) -> Task:
     return task
 
 
-def create_and_run(name: str, params: dict) -> Task:
-    """Создаёт задачу и сразу считает её — синхронно или через очередь Redis/RQ.
+def _execute_in_thread(task_id: int) -> None:
+    """Тело фонового потока: считает задачу и закрывает своё соединение с БД.
 
-    Флаг переключения — settings.USE_QUEUE (см. config/settings.py).
+    Соединения Django привязаны к потоку — без close() каждый расчёт
+    оставлял бы открытое соединение.
+    """
+    try:
+        execute_task(task_id)
+    finally:
+        connection.close()
+
+
+def create_and_run(name: str, params: dict) -> Task:
+    """Создаёт задачу и запускает расчёт, НЕ дожидаясь его окончания.
+
+    USE_QUEUE=1 — задача уходит в очередь Redis/RQ (web/jobs.py).
+    Иначе — расчёт в отдельном потоке этого же процесса (ADR-002): HTTP-ответ
+    уходит сразу, статус RUNNING → FINISHED/FAILED клиент узнаёт опросом
+    GET /api/tasks/{id}. Флаг переключения — settings.USE_QUEUE.
     """
     from django.conf import settings
 
@@ -59,6 +78,11 @@ def create_and_run(name: str, params: dict) -> Task:
 
         enqueue_task(task.id)
     else:
-        execute_task(task.id)
-        task.refresh_from_db()
+        # on_commit: поток стартует, только когда строка задачи уже видна
+        # другим соединениям (в autocommit — немедленно).
+        transaction.on_commit(
+            lambda: threading.Thread(
+                target=_execute_in_thread, args=(task.id,), daemon=True
+            ).start()
+        )
     return task

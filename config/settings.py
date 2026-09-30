@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = os.environ.get("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# Флаг заезда 2: выполнять расчёт в очереди (RQ + Redis) или синхронно прямо в запросе.
+# Флаг заезда 2: выполнять расчёт в очереди (RQ + Redis) или в фоновом потоке веб-процесса (ADR-002).
 USE_QUEUE = os.environ.get("USE_QUEUE", "0") == "1"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
@@ -84,7 +84,16 @@ if _db_url.startswith("postgres"):
         }
     }
 else:
-    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+            # Тестовая БД — файл, а не память: расчёт идёт в фоновом потоке (ADR-002),
+            # а SQLite в памяти (shared cache) не ждёт блокировку, а сразу падает
+            # с «database table is locked» при параллельной записи.
+            "TEST": {"NAME": BASE_DIR / "test_db.sqlite3"},
+        }
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

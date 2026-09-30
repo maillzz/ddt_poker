@@ -44,3 +44,19 @@ def test_quads_on_board_is_always_a_tie():
 def test_no_bet_to_call_recommends_check_not_fold():
     # эталон: call_amount = 0 — ставить нечего, сброс бессмыслен, поэтому CHECK
     assert _recommend(equity=0.2, pot_size=100, call_amount=0) == "CHECK"
+
+
+def test_royal_flush_always_wins():
+    # эталон: у героя роял-флеш (As Ks + Qs Js Ts). Пары нет, но сильнее руки
+    # в покере не существует, а второго рояла в пиках нет — победа в 100% раздач.
+    # Доказывает, что run() оценивает реальную комбинацию (treys), а не «пара/не пара».
+    r = run(
+        {
+            "hole_cards": ["As", "Ks"],
+            "community": ["Qs", "Js", "Ts", "2h", "3d"],
+            "opponents": 9,
+            "simulations": 2_000,
+            "seed": 7,
+        }
+    )
+    assert r["win_probability"] == 1.0

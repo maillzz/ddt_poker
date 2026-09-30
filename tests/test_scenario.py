@@ -1,4 +1,6 @@
 # tests/test_scenario.py
+import time
+
 import pytest
 from django.test import Client
 
@@ -12,7 +14,7 @@ def test_poker_web_flow():
     assert response.status_code in (200, 302)
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)  # расчёт в фоновом потоке — см. tests/test_api.py
 def test_full_scenario_form_to_result():
     """Сквозной сценарий: форма → расчёт ядром → результат на странице задачи.
 
@@ -36,9 +38,19 @@ def test_full_scenario_form_to_result():
     # Успешный POST редиректит на страницу созданной задачи
     assert response.status_code == 302
 
+    # Страница задачи открывается сразу, не дожидаясь конца расчёта
     detail = client.get(response["Location"])
     assert detail.status_code == 200
+    task = detail.context["task"]
+    assert task.status in ("PENDING", "RUNNING", "FINISHED")
 
+    # Ждём завершения так же, как страница: опросом GET /api/tasks/{id}
+    deadline = time.monotonic() + 10
+    while client.get(f"/api/tasks/{task.pk}").json()["status"] != "FINISHED":
+        assert time.monotonic() < deadline, "расчёт не завершился за 10 секунд"
+        time.sleep(0.02)
+
+    detail = client.get(response["Location"])
     task = detail.context["task"]
     assert task.status == "FINISHED"
     assert task.result["tie_probability"] == 1.0
