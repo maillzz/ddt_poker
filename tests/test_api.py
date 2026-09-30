@@ -115,3 +115,123 @@ def test_poker_api_validation_error():
         content_type="application/json",
     )
     assert r.status_code == 422
+
+
+# --- Граница схемы: плохие входы отклоняются с 422 ДО расчёта ------------------
+
+VALID_PARAMS = {"hole_cards": ["As", "Kh"], "opponents": 1, "simulations": 1000, "seed": 1}
+MISSING = object()  # маркер «поле не передано вовсе»
+
+BAD_INPUTS = [
+    # пустое значение
+    pytest.param({"hole_cards": ""}, id="empty-string"),
+    pytest.param({"hole_cards": []}, id="empty-list"),
+    pytest.param({"hole_cards": ["", ""]}, id="empty-card"),
+    pytest.param({"hole_cards": MISSING}, id="missing-hole_cards"),
+    # повтор карты
+    pytest.param({"hole_cards": ["As", "As"]}, id="duplicate-As-As"),
+    pytest.param({"hole_cards": ["As", "as"]}, id="duplicate-other-case"),
+    pytest.param({"community": ["As", "7c", "2d"]}, id="duplicate-hand-and-board"),
+    pytest.param({"community": ["7c", "7c", "2d"]}, id="duplicate-on-board"),
+    # недопустимая карта
+    pytest.param({"hole_cards": ["As", "Zz"]}, id="card-Zz"),
+    pytest.param({"hole_cards": ["As", "Zs"]}, id="bad-rank"),
+    pytest.param({"hole_cards": ["As", "Kx"]}, id="bad-suit"),
+    pytest.param({"hole_cards": ["As", "10h"]}, id="card-3-chars"),
+    pytest.param({"hole_cards": ["As", "K"]}, id="card-1-char"),
+    # огромное значение
+    pytest.param({"simulations": 200_001}, id="simulations-over-max"),
+    pytest.param({"simulations": 10**12}, id="simulations-huge"),
+    pytest.param({"opponents": 10}, id="opponents-over-max"),
+    pytest.param({"hole_cards": ["As", "Kh", "Qd"]}, id="three-hole-cards"),
+    pytest.param({"community": ["2c", "3c", "4c", "5c", "6c", "7c"]}, id="six-board-cards"),
+    # отрицательное / ниже минимума
+    pytest.param({"simulations": -1}, id="simulations-negative"),
+    pytest.param({"simulations": 99}, id="simulations-under-min"),
+    pytest.param({"opponents": -1}, id="opponents-negative"),
+    pytest.param({"opponents": 0}, id="opponents-zero"),
+    pytest.param({"pot_size": -1}, id="pot_size-negative"),
+    pytest.param({"call_amount": -5}, id="call_amount-negative"),
+    # неправильный тип
+    pytest.param({"simulations": "abc"}, id="letters-instead-of-number"),
+    pytest.param({"simulations": 1.5}, id="fraction-instead-of-int"),
+    pytest.param({"hole_cards": 123}, id="number-instead-of-list"),
+    pytest.param({"hole_cards": "As Kh"}, id="string-instead-of-list"),
+    pytest.param({"hole_cards": [1, 2]}, id="number-instead-of-card"),
+    pytest.param({"opponents": [1]}, id="list-instead-of-number"),
+    pytest.param({"seed": "x"}, id="seed-letters"),
+]
+
+
+def post_params(client, overrides):
+    params = dict(VALID_PARAMS)
+    for key, value in overrides.items():
+        if value is MISSING:
+            params.pop(key)
+        else:
+            params[key] = value
+    return client.post(
+        "/api/tasks", data={"name": "граница", "params": params}, content_type="application/json"
+    )
+
+
+@pytest.mark.parametrize("overrides", BAD_INPUTS)
+def test_bad_input_rejected_with_422_before_calculation(overrides, monkeypatch):
+    """Плохой вход → 422 от схемы; задача не создаётся, ядро не вызывается."""
+    from web.models import Task
+
+    def solver_must_not_run(params):
+        raise AssertionError("расчёт запущен для невалидного входа")
+
+    monkeypatch.setattr("web.services.solve_poker", solver_must_not_run)
+
+    r = post_params(Client(), overrides)
+    assert r.status_code == 422, r.content
+    assert Task.objects.count() == 0
+
+
+def test_missing_params_rejected_with_422():
+    """Тело без params (обязательное поле) → 422, а не 500."""
+    r = Client().post("/api/tasks", data={"name": "без params"}, content_type="application/json")
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        pytest.param({"simulations": 100}, id="simulations-min"),
+        pytest.param({"simulations": 10_000}, id="simulations-10k"),
+        pytest.param({"simulations": 100_000}, id="simulations-100k"),
+        pytest.param({"simulations": 200_000}, id="simulations-max"),
+        pytest.param({"opponents": 9, "simulations": 200_000}, id="opponents-max-simulations-max"),
+        pytest.param({"community": ["7c", "5d", "2h", "Jc", "9s"]}, id="full-board"),
+        pytest.param({"seed": -1}, id="seed-negative-allowed"),
+    ],
+)
+def test_boundary_values_accepted(overrides, monkeypatch):
+    """Граничные значения проходят схему. Ядро подменено быстрым — тяжёлого расчёта нет."""
+    from web.models import Task
+
+    monkeypatch.setattr("web.services.solve_poker", lambda params: {"equity": 0.5})
+    client = Client()
+
+    r = post_params(client, overrides)
+    assert r.status_code == 202, r.content
+    task_id = r.json()["id"]
+    wait_status(client, task_id, "FINISHED")  # дождаться потока до очистки БД
+    stored = Task.objects.get(pk=task_id).params
+    for key, value in overrides.items():
+        assert stored[key] == value
+
+
+def test_cards_normalized_to_canonical_case(monkeypatch):
+    """'as kH' принимается и сохраняется как 'As', 'Kh' — в ядро идёт единый формат."""
+    from web.models import Task
+
+    monkeypatch.setattr("web.services.solve_poker", lambda params: {"equity": 0.5})
+    client = Client()
+
+    r = post_params(client, {"hole_cards": ["as", "kH"]})
+    assert r.status_code == 202
+    wait_status(client, r.json()["id"], "FINISHED")
+    assert Task.objects.get(pk=r.json()["id"]).params["hole_cards"] == ["As", "Kh"]
