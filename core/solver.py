@@ -45,7 +45,7 @@ def _recommend(equity: float, pot_size: float, call_amount: float) -> str:
     рейзить на грани безубыточности.
     """
     if call_amount <= 0:
-        return "CALL" if equity >= 0.5 else "FOLD"
+        return "CALL" if equity >= 0.5 else "CHECK"  # ставить нечего — сбрасывать незачем
 
     pot_odds = call_amount / (pot_size + call_amount)
     if equity >= pot_odds + 0.15:
@@ -64,7 +64,7 @@ def run(params: dict) -> dict:
         opponents: int         — число противников (1..9)
         simulations: int       — число итераций симуляции
         seed: int | None       — фиксирует случайность для воспроизводимости
-        pot_size, call_amount  — для рекомендации RAISE/CALL/FOLD (не обязательны)
+        pot_size, call_amount  — для рекомендации RAISE/CALL/CHECK/FOLD (не обязательны)
     """
     hole_cards = params.get("hole_cards", [])
     community = params.get("community") or []

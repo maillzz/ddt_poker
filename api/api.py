@@ -1,6 +1,8 @@
-from typing import Optional
+from django.core.exceptions import ObjectDoesNotExist
 from ninja import NinjaAPI, Schema
+from ninja.errors import HttpError
 from ninja.responses import Response
+
 from core.schemas import PokerParams
 from web import services
 
@@ -19,7 +21,7 @@ class TaskOut(Schema):
 
 @api.post("/tasks", response={202: TaskOut})
 def create_task(request, payload: TaskIn):
-    task = services.create_task(
+    task = services.create_and_run(
         name=payload.name,
         params=payload.params.model_dump(),
     )
@@ -28,5 +30,8 @@ def create_task(request, payload: TaskIn):
 
 @api.get("/tasks/{task_id}")
 def get_task(request, task_id: int):
-    task = services.get_task(task_id)
+    try:
+        task = services.get_task(task_id)
+    except ObjectDoesNotExist:
+        raise HttpError(404, "задача не найдена") from None
     return {"id": task.id, "status": getattr(task, "status", "PENDING")}

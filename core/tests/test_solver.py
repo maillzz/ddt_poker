@@ -1,5 +1,5 @@
 # core/tests/test_solver.py
-from core.solver import hand_rank, run
+from core.solver import _recommend, hand_rank, run
 
 PAIR = ["As", "Ad", "7c", "5h", "2d"]  # пара тузов
 HIGH = ["Ks", "Qd", "9c", "5h", "2d"]  # только старшая карта
@@ -39,3 +39,8 @@ def test_quads_on_board_is_always_a_tie():
     assert r["tie_probability"] == 1.0
     assert r["win_probability"] == 0.0
     assert r["loss_probability"] == 0.0
+
+
+def test_no_bet_to_call_recommends_check_not_fold():
+    # эталон: call_amount = 0 — ставить нечего, сброс бессмыслен, поэтому CHECK
+    assert _recommend(equity=0.2, pot_size=100, call_amount=0) == "CHECK"
