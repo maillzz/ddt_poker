@@ -2,26 +2,23 @@
 import time
 
 import pytest
-from django.test import Client
 
 
 @pytest.mark.django_db
-def test_poker_web_flow():
+def test_poker_web_flow(client):
     """Проверка доступности главной страницы веб-интерфейса покера."""
-    client = Client()
     response = client.get("/")
     # Проверяем, что эндпоинт отдает успешный ответ
     assert response.status_code in (200, 302)
 
 
 @pytest.mark.django_db(transaction=True)  # расчёт в фоновом потоке — см. tests/test_api.py
-def test_full_scenario_form_to_result():
+def test_full_scenario_form_to_result(client):
     """Сквозной сценарий: форма → расчёт ядром → результат на странице задачи.
 
     Эталон известен заранее: каре тузов на столе — гарантированная ничья
     (см. core/tests/test_solver.py::test_quads_on_board_is_always_a_tie).
     """
-    client = Client()
 
     response = client.post(
         "/tasks/new/",

@@ -33,8 +33,10 @@ class PokerParams(BaseModel):
     simulations: int = Field(default=10_000, ge=100, le=200_000)
     seed: int | None = Field(default=None)
     # Нужны только для рекомендации RAISE/CALL/CHECK/FOLD (см. core/solver.py:_recommend).
-    pot_size: float = Field(default=0.0, ge=0)
-    call_amount: float = Field(default=0.0, ge=0)
+    # Верхняя граница — чтобы огромные/бесконечные числа не доходили до расчёта.
+    # Нижняя — ge=0, а не gt=0: call_amount = 0 значит «доплачивать нечего» (→ CHECK).
+    pot_size: float = Field(default=0.0, ge=0, le=1_000_000)
+    call_amount: float = Field(default=0.0, ge=0, le=1_000_000)
 
     @model_validator(mode="after")
     def _no_duplicate_cards(self) -> "PokerParams":

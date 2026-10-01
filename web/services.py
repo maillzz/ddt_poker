@@ -12,16 +12,17 @@ from core.solver import run as solve_poker
 from web.models import Task
 
 
-def create_task(name: str, params: dict) -> Task:
-    return Task.objects.create(name=name, params=params, status="PENDING")
+def create_task(name: str, params: dict, *, owner) -> Task:
+    return Task.objects.create(name=name, params=params, status="PENDING", owner=owner)
 
 
-def get_task(task_id: int) -> Task:
-    return Task.objects.get(id=task_id)
+def get_task(task_id: int, *, owner) -> Task:
+    """Задача владельца. Чужая и несуществующая неразличимы: обе дают Task.DoesNotExist (→ 404)."""
+    return Task.objects.get(id=task_id, owner=owner)
 
 
-def list_tasks():
-    return Task.objects.all().order_by("-created_at")
+def list_tasks(*, owner):
+    return Task.objects.filter(owner=owner).order_by("-created_at")
 
 
 def execute_task(task_id: int) -> Task:
@@ -62,7 +63,7 @@ def _execute_in_thread(task_id: int) -> None:
         connection.close()
 
 
-def create_and_run(name: str, params: dict) -> Task:
+def create_and_run(name: str, params: dict, *, owner) -> Task:
     """Создаёт задачу и запускает расчёт, НЕ дожидаясь его окончания.
 
     USE_QUEUE=1 — задача уходит в очередь Redis/RQ (web/jobs.py).
@@ -72,7 +73,7 @@ def create_and_run(name: str, params: dict) -> Task:
     """
     from django.conf import settings
 
-    task = create_task(name=name, params=params)
+    task = create_task(name=name, params=params, owner=owner)
     if settings.USE_QUEUE:
         from web.jobs import enqueue_task
 

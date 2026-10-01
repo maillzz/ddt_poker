@@ -2,7 +2,6 @@ import threading
 import time
 
 import pytest
-from django.test import Client
 
 # Расчёт идёт в фоновом потоке со своим соединением к БД, поэтому тестам нужна
 # реальная фиксация транзакций (transaction=True): иначе поток не увидит задачу.
@@ -34,9 +33,8 @@ def wait_status(client, task_id, expected, timeout=10.0):
     raise AssertionError(f"задача {task_id}: ждали {expected}, последний статус {status}")
 
 
-def test_create_poker_task_returns_202_and_finishes():
+def test_create_poker_task_returns_202_and_finishes(client):
     """POST возвращает 202 и id, задача существует и в фоне доходит до FINISHED."""
-    client = Client()
     r = post_task(client)
     assert r.status_code == 202
     task_id = r.json()["id"]
@@ -48,7 +46,7 @@ def test_create_poker_task_returns_202_and_finishes():
     wait_status(client, task_id, "FINISHED")
 
 
-def test_post_does_not_wait_for_calculation(monkeypatch):
+def test_post_does_not_wait_for_calculation(client, monkeypatch):
     """POST отвечает, пока расчёт ещё идёт: видим RUNNING, затем FINISHED.
 
     Ядро подменено функцией, которая ждёт сигнала, — так статус RUNNING
@@ -63,7 +61,6 @@ def test_post_does_not_wait_for_calculation(monkeypatch):
         return {"equity": 0.85, "recommendation": "RAISE"}
 
     monkeypatch.setattr("web.services.solve_poker", slow_solver)
-    client = Client()
 
     r = post_task(client)  # вернулся, хотя solver ещё заблокирован
     assert r.status_code == 202
@@ -77,30 +74,27 @@ def test_post_does_not_wait_for_calculation(monkeypatch):
     assert calc_threads and calc_threads[0] is not threading.main_thread()
 
 
-def test_background_error_marks_task_failed(monkeypatch):
+def test_background_error_marks_task_failed(client, monkeypatch):
     """Исключение в фоновом расчёте переводит задачу в FAILED, а не оставляет RUNNING."""
 
     def broken_solver(params):
         raise ValueError("сломалось ядро")
 
     monkeypatch.setattr("web.services.solve_poker", broken_solver)
-    client = Client()
 
     task_id = post_task(client).json()["id"]
     wait_status(client, task_id, "FAILED")
 
 
-def test_get_missing_task_returns_404():
+def test_get_missing_task_returns_404(client):
     """GET несуществующей задачи возвращает 404, а не 500."""
-    client = Client()
     r = client.get("/api/tasks/999")
     assert r.status_code == 404
     assert r.json() == {"detail": "задача не найдена"}
 
 
-def test_poker_api_validation_error():
+def test_poker_api_validation_error(client):
     """POST с некорректным значением opponents (0 при ge=1) возвращает 422."""
-    client = Client()
     payload = {
         "name": "Ошибка валидации",
         "params": {
@@ -176,7 +170,7 @@ def post_params(client, overrides):
 
 
 @pytest.mark.parametrize("overrides", BAD_INPUTS)
-def test_bad_input_rejected_with_422_before_calculation(overrides, monkeypatch):
+def test_bad_input_rejected_with_422_before_calculation(client, overrides, monkeypatch):
     """Плохой вход → 422 от схемы; задача не создаётся, ядро не вызывается."""
     from web.models import Task
 
@@ -185,14 +179,14 @@ def test_bad_input_rejected_with_422_before_calculation(overrides, monkeypatch):
 
     monkeypatch.setattr("web.services.solve_poker", solver_must_not_run)
 
-    r = post_params(Client(), overrides)
+    r = post_params(client, overrides)
     assert r.status_code == 422, r.content
     assert Task.objects.count() == 0
 
 
-def test_missing_params_rejected_with_422():
+def test_missing_params_rejected_with_422(client):
     """Тело без params (обязательное поле) → 422, а не 500."""
-    r = Client().post("/api/tasks", data={"name": "без params"}, content_type="application/json")
+    r = client.post("/api/tasks", data={"name": "без params"}, content_type="application/json")
     assert r.status_code == 422
 
 
@@ -208,12 +202,11 @@ def test_missing_params_rejected_with_422():
         pytest.param({"seed": -1}, id="seed-negative-allowed"),
     ],
 )
-def test_boundary_values_accepted(overrides, monkeypatch):
+def test_boundary_values_accepted(client, overrides, monkeypatch):
     """Граничные значения проходят схему. Ядро подменено быстрым — тяжёлого расчёта нет."""
     from web.models import Task
 
     monkeypatch.setattr("web.services.solve_poker", lambda params: {"equity": 0.5})
-    client = Client()
 
     r = post_params(client, overrides)
     assert r.status_code == 202, r.content
@@ -224,12 +217,11 @@ def test_boundary_values_accepted(overrides, monkeypatch):
         assert stored[key] == value
 
 
-def test_cards_normalized_to_canonical_case(monkeypatch):
+def test_cards_normalized_to_canonical_case(client, monkeypatch):
     """'as kH' принимается и сохраняется как 'As', 'Kh' — в ядро идёт единый формат."""
     from web.models import Task
 
     monkeypatch.setattr("web.services.solve_poker", lambda params: {"equity": 0.5})
-    client = Client()
 
     r = post_params(client, {"hole_cards": ["as", "kH"]})
     assert r.status_code == 202

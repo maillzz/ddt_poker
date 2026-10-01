@@ -17,8 +17,17 @@ if _env_file.exists():
             _k, _v = _line.split("=", 1)
             os.environ.setdefault(_k.strip(), _v.strip())
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
-DEBUG = os.environ.get("DEBUG", "1") == "1"
+# Ключа по умолчанию нет: без SECRET_KEY в окружении/.env сервер не стартует.
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "SECRET_KEY не задан. Скопируйте .env.example в .env и впишите ключ: "
+        'python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"'
+    )
+# Отладка выключена, пока явно не задано DEBUG=1 (в проде трейсбеки и настройки не утекают).
+DEBUG = os.environ.get("DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Флаг заезда 2: выполнять расчёт в очереди (RQ + Redis) или в фоновом потоке веб-процесса (ADR-002).
@@ -113,4 +122,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"

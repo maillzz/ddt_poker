@@ -101,13 +101,20 @@ cd ddt_poker
 # Установка зависимостей (включая treys — оценку покерных комбинаций)
 pip install -r requirements.txt
 
-# Применение миграций и запуск сервера разработки
+# Настройки окружения: скопировать шаблон и вписать SECRET_KEY (без него сервер не стартует)
+cp .env.example .env
+python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
+
+# Миграции, пользователь (сайт и API доступны только после входа) и запуск
 python manage.py migrate
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Веб-интерфейс: `http://127.0.0.1:8000/` (форма → расчёт → результат).
-REST API и Swagger UI: `http://127.0.0.1:8000/api/docs`.
+Вход: `http://127.0.0.1:8000/accounts/login/`. Веб-интерфейс: `http://127.0.0.1:8000/` (форма → расчёт → результат).
+REST API и Swagger UI: `http://127.0.0.1:8000/api/docs`. API требует входа (сессия, иначе 401)
+и CSRF-токен на POST (заголовок `X-CSRFToken` из cookie `csrftoken`, иначе 403).
+Каждый пользователь видит только свои задачи. Аудит безопасности — [docs/security_review.md](docs/security_review.md).
 
 ### 🚧 Границы входных данных
 
@@ -121,8 +128,9 @@ REST API и Swagger UI: `http://127.0.0.1:8000/api/docs`.
 | `opponents`   | целое               | 1 ≤ opponents ≤ **9**            | 1            |
 | `simulations` | целое               | 100 ≤ simulations ≤ **200 000**  | 10 000       |
 | `seed`        | целое или `null`    | любое (в т.ч. отрицательное)     | `null`       |
-| `pot_size`    | число               | ≥ 0                              | 0            |
-| `call_amount` | число               | ≥ 0                              | 0            |
+| `name`        | строка              | ≤ 255 символов                   | «AA против одного» |
+| `pot_size`    | число               | 0 ≤ pot_size ≤ 1 000 000         | 0            |
+| `call_amount` | число               | 0 ≤ call_amount ≤ 1 000 000      | 0            |
 
 **Карты** — строка ровно из 2 символов «ранг + масть», например `As`, `Td`, `7c`:
 - ранги: `2 3 4 5 6 7 8 9 T J Q K A` (десятка — `T`, не `10`);

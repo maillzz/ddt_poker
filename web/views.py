@@ -1,18 +1,21 @@
-from pydantic import ValidationError
-
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from pydantic import ValidationError
 
 from core.schemas import PokerParams
 from web import services
 from web.forms import PokerTaskForm
-from web.models import Task
+
+# Все страницы — только после входа; аноним уходит на settings.LOGIN_URL (/accounts/login/).
 
 
+@login_required
 def task_list(request):
-    tasks = services.list_tasks()[:50]
+    tasks = services.list_tasks(owner=request.user)[:50]
     return render(request, "web/list.html", {"tasks": tasks})
 
 
+@login_required
 def task_create(request):
     if request.method == "POST":
         form = PokerTaskForm(request.POST)
@@ -36,7 +39,7 @@ def task_create(request):
                     " ".join(validated.hole_cards), validated.opponents
                 )
                 task = services.create_and_run(
-                    name=name, params=validated.model_dump()
+                    name=name, params=validated.model_dump(), owner=request.user
                 )
                 return redirect("task_detail", pk=task.pk)
     else:
@@ -44,6 +47,8 @@ def task_create(request):
     return render(request, "web/form.html", {"form": form})
 
 
+@login_required
 def task_detail(request, pk: int):
-    task = get_object_or_404(Task, pk=pk)
+    # Ищем только среди задач владельца: чужая задача — 404, как несуществующая.
+    task = get_object_or_404(services.list_tasks(owner=request.user), pk=pk)
     return render(request, "web/detail.html", {"task": task})

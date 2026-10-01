@@ -1,4 +1,6 @@
 from decimal import Decimal
+
+from django.conf import settings
 from django.db import models
 
 
@@ -148,6 +150,14 @@ class Task(models.Model):
         ("FINISHED", "Finished"),
         ("FAILED", "Failed"),
     ]
+    # Владелец: задачу видит и получает только он (фильтр — в web/services.py).
+    # null=True — только для задач, созданных до появления владельца; они не видны никому.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tasks",
+        null=True,
+    )
     name = models.CharField(max_length=255)
     params = models.JSONField(default=dict)
     status = models.CharField(
