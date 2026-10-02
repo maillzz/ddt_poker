@@ -1,9 +1,24 @@
 {% extends "base.html" %}
-{% block h1 %}Новая задача{% endblock %}
+{% block title %}Калькулятор раздачи · Poker Lab{% endblock %}
 {% block content %}
-<form method="post">{% csrf_token %}
-{{ form.as_p }}
-<button type="submit">Поставить расчёт</button>
+<div class="page-heading"><div><p class="eyebrow">ВАШЕ ПРЕИМУЩЕСТВО — В ЦИФРАХ</p><h1>Разберите свою раздачу<span class="accent">.</span></h1><p class="subtitle">Выберите карты. Задайте ситуацию. Узнайте свои шансы.</p></div><a class="text-link" href="{% url 'task_list' %}">История расчётов ↗</a></div>
+<noscript><p class="error-banner">Для визуального выбора карт включите JavaScript или используйте раздел «Ввести карты текстом».</p></noscript>
+<form method="post" id="poker-form">{% csrf_token %}
+{% if form.errors %}<div class="error-banner" role="alert"><strong>Проверьте параметры раздачи</strong>{{ form.non_field_errors }}{% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}</div>{% endif %}
+<div class="workspace">
+  <div class="table-column">{% include "web/table.html" %}
+    <div class="under-table"><div><span class="step-number">01</span><div><strong>Ваша рука</strong><p>Две карманные карты</p></div></div><div><span class="step-number">02</span><div><strong>Карты стола</strong><p>Оставьте неизвестные пустыми</p></div></div><button class="quiet" type="button" id="clear-board">Очистить стол ↺</button></div>
+    <details class="manual-input"><summary>Ввести карты текстом</summary><div class="field-pair"><div class="field"><label for="id_hole_cards">Карманные карты</label>{{ form.hole_cards }}<small>Например: As Kh</small></div><div class="field"><label for="id_community">Общие карты</label>{{ form.community }}<small>Например: 7c 5d 2h · можно оставить пустым</small></div></div></details>
+  </div>
+  <aside class="settings panel"><div class="panel-heading"><h2>Параметры раздачи</h2><span>02 / 02</span></div>
+    <div class="field"><label for="id_opponents">Оппоненты <span>за столом</span></label><div class="stepper"><button type="button" data-step="-1" aria-label="Уменьшить число оппонентов">−</button>{{ form.opponents }}<button type="button" data-step="1" aria-label="Увеличить число оппонентов">+</button></div><small>От 1 до 9 · случайные руки соперников</small></div>
+    <div class="field-pair"><div class="field"><label for="id_pot_size">Размер банка</label>{{ form.pot_size }}</div><div class="field"><label for="id_call_amount">Сумма колла</label>{{ form.call_amount }}</div></div>
+    <div class="field"><label for="id_simulations">Симуляции <span>точность расчёта</span></label>{{ form.simulations }}<div class="presets"><button type="button" data-simulations="1000">1 000</button><button type="button" data-simulations="10000">10 000</button><button type="button" data-simulations="100000">100 000</button></div><small>Больше раздач — стабильнее оценка, дольше расчёт.</small></div>
+    <details class="advanced"><summary>Дополнительные настройки</summary><div class="field"><label for="id_seed">Seed</label>{{ form.seed }}<small>Фиксирует случайность для повторяемого расчёта.</small></div></details>
+    <button class="primary calculate" type="submit"><span>Рассчитать шансы</span><span aria-hidden="true">↗</span></button><p class="submit-note">Расчёт методом Монте-Карло</p>
+  </aside>
+</div>
 </form>
-<p class="card">При большом числе симуляций расчёт занимает заметное время — почувствуйте, как страница «висит». На заезде 2 (USE_QUEUE=1) это уходит в очередь Redis/RQ, а страница задачи опрашивает статус через API.</p>
+<section class="insights"><div><span class="insight-icon">◉</span><h3>Вероятность победы</h3><p>Оценка Win / Tie / Loss на тысячах возможных продолжений раздачи.</p></div><div><span class="insight-icon">↗</span><h3>Эквити вашей руки</h3><p>Доля банка с учётом побед и ничьих по модели текущего солвера.</p></div><div><span class="insight-icon">♧</span><h3>Рекомендация действия</h3><p>Raise, Call, Check или Fold на основе эквити и цены колла.</p></div></section>
+<dialog id="card-picker" aria-labelledby="picker-title"><div class="picker-heading"><div><p class="eyebrow">КОЛОДА · 52 КАРТЫ</p><h2 id="picker-title">Выберите карту</h2></div><button class="quiet" type="button" id="close-picker" aria-label="Закрыть выбор карт">✕</button></div><p class="muted">Уже выбранные карты недоступны.</p><div id="deck" class="deck"></div><button class="secondary" type="button" id="remove-card">Убрать карту</button></dialog>
 {% endblock %}

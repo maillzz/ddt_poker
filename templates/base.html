@@ -1,24 +1,28 @@
+{% load static %}
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>{% block title %}Poker Monte Carlo{% endblock %}</title>
-<style>
-  body{font-family:system-ui,Arial,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#1f1f1f}
-  nav a{margin-right:1rem} table{border-collapse:collapse;width:100%} td,th{border-bottom:1px solid #ddd;padding:.4rem;text-align:left}
-  .status-finished{color:#2e7d32}.status-failed{color:#c62828}.status-running,.status-pending{color:#d9822b}
-  form p{margin:.4rem 0} input,select{padding:.3rem} button{padding:.4rem 1rem}
-  .card{background:#f3f4f6;border-radius:8px;padding:1rem;margin:1rem 0}
-</style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111918">
+  <title>{% block title %}Poker Lab · Monte Carlo{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'poker/mark.svg' %}">
+  <link rel="stylesheet" href="{% static 'poker/app.css' %}">
+  <script defer src="{% static 'poker/app.js' %}"></script>
 </head>
-<body>
-<nav><a href="{% url 'task_list' %}">Задачи</a><a href="{% url 'task_create' %}">Новая задача</a><a href="/api/docs">API</a><a href="/admin/">Админка</a>
-{% if user.is_authenticated %}
-  {{ user.username }}
-  <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}<button type="submit">Выйти</button></form>
-{% else %}<a href="{% url 'login' %}">Войти</a>{% endif %}
-</nav>
-<h1>{% block h1 %}{% endblock %}</h1>
-{% block content %}{% endblock %}
+<body data-assets="{% static 'poker/cards/' %}">
+  <a class="skip-link" href="#main">К содержимому</a>
+  <header class="topbar">
+    <a class="brand" href="{% url 'task_create' %}"><img class="brand-mark" src="{% static 'poker/mark.svg' %}" alt="" width="42" height="46"><span>POKER<span class="brand-light">LAB</span><small>MONTE CARLO ANALYSIS</small></span></a>
+    {% if user.is_authenticated %}
+    <nav aria-label="Основная навигация">
+      <a class="{% if request.resolver_match.url_name == 'task_create' %}active{% endif %}" href="{% url 'task_create' %}">Калькулятор</a>
+      <a class="{% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_detail' %}active{% endif %}" href="{% url 'task_list' %}">История расчётов</a>
+      <a href="/api/docs">API <span aria-hidden="true">↗</span></a>
+    </nav>
+    <div class="account"><span class="avatar">{{ user.username|first|upper }}</span><span class="username">{{ user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="quiet" type="submit">Выйти</button></form></div>
+    {% else %}<span class="header-note">TEXAS HOLD’EM · УЧЕБНЫЙ ПРОЕКТ</span>{% endif %}
+  </header>
+  <main id="main" class="main">{% block content %}{% endblock %}</main>
+  <footer class="footer"><span>♠ Poker Lab <span class="muted">/</span> Texas Hold’em</span><span>Математика раздачи. Осознанные решения.</span><span class="muted">Учебный проект · Monte Carlo</span></footer>
 </body>
 </html>

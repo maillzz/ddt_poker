@@ -1,17 +1,4 @@
 {% extends "base.html" %}
-{% block h1 %}Задачи{% endblock %}
-{% block content %}
-<table>
-<tr><th>#</th><th>Название</th><th>Статус</th><th>Создана</th></tr>
-{% for t in tasks %}
-<tr>
-  <td><a href="{% url 'task_detail' t.pk %}">{{ t.pk }}</a></td>
-  <td>{{ t.name }}</td>
-  <td class="status-{{ t.status|lower }}">{{ t.get_status_display }}</td>
-  <td>{{ t.created_at|date:"d.m.Y H:i" }}</td>
-</tr>
-{% empty %}
-<tr><td colspan="4">Пока пусто — <a href="{% url 'task_create' %}">создать задачу</a></td></tr>
-{% endfor %}
-</table>
-{% endblock %}
+{% block title %}История расчётов · Poker Lab{% endblock %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">ОТ РАЗДАЧИ К РАЗДАЧЕ</p><h1>История расчётов<span class="accent">.</span></h1><p class="subtitle">Ваши последние 50 сценариев — всё для сравнения и анализа.</p></div><a class="primary" href="{% url 'task_create' %}">Новая раздача ↗</a></div>
+<div class="panel history"><div class="panel-heading"><h2>Ваши раздачи</h2><span>{{ tasks|length }} РАСЧЁТОВ</span></div>{% if tasks %}<div class="table-scroll"><table><thead><tr><th>Раздача</th><th>Оппоненты</th><th>Статус</th><th>Создана</th><th><span class="sr-only">Открыть</span></th></tr></thead><tbody>{% for t in tasks %}<tr><td><a class="hand-name" href="{% url 'task_detail' t.pk %}">{{ t.name }}</a><small>#{{ t.pk }} · {{ t.params.simulations }} симуляций</small></td><td>{{ t.params.opponents }}</td><td><span class="status status-{{ t.status|lower }}">{{ t.get_status_display }}</span></td><td class="muted">{{ t.created_at|date:"d.m.Y · H:i" }}</td><td><a class="text-link" href="{% url 'task_detail' t.pk %}" aria-label="Открыть расчёт {{ t.pk }}">↗</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><div class="empty-suits">♠ <span>♥</span> ♣ <span>♦</span></div><h2>Каждая раздача — новая история</h2><p>Вы ещё не запускали расчёты. Начните с двух карманных карт.</p><a class="primary" href="{% url 'task_create' %}">Разобрать первую раздачу ↗</a></div>{% endif %}</div>{% endblock %}

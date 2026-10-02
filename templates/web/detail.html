@@ -1,36 +1,16 @@
-{% extends "base.html" %}
-{% block h1 %}Задача #{{ task.pk }}: {{ task.name }}{% endblock %}
+{% extends "base.html" %}{% load poker_display %}
+{% block title %}Расчёт #{{ task.pk }} · Poker Lab{% endblock %}
 {% block content %}
-<p>Статус: <b class="status-{{ task.status|lower }}">{{ task.get_status_display }}</b> · параметры: <code>{{ task.params }}</code></p>
-{% if task.status == "FAILED" %}<p class="card">Ошибка: {{ task.error }}</p>{% endif %}
+<div class="page-heading"><div><p class="eyebrow">АНАЛИЗ РАЗДАЧИ / #{{ task.pk }}</p><h1>Ваша раздача в цифрах<span class="accent">.</span></h1><p class="subtitle">{{ task.name }} · {{ task.params.simulations }} симуляций · {{ task.created_at|date:"d.m.Y H:i" }}</p></div><a class="primary" href="{% url 'task_create' %}">Новая раздача ↗</a></div>
+{{ task.params|json_script:"task-params" }}
+<div class="workspace result-workspace"><div>{% include "web/table.html" %}<div class="under-table"><span>Оппонентов: <strong>{{ task.params.opponents }}</strong></span><span>Банк: <strong>{{ task.params.pot_size }}</strong></span><span>Сумма колла: <strong>{{ task.params.call_amount }}</strong></span></div></div>
+<section class="panel result-panel"><div class="panel-heading"><h2>Результат анализа</h2><span class="status status-{{ task.status|lower }}">{{ task.get_status_display }}</span></div>
 {% if task.status == "FINISHED" %}
-<div class="card">
-  <p>
-    Win: <b>{{ task.result.win_probability|floatformat:2 }}</b> ·
-    Tie: {{ task.result.tie_probability|floatformat:2 }} ·
-    Loss: {{ task.result.loss_probability|floatformat:2 }}
-  </p>
-  <p>
-    Эквити: <b>{{ task.result.equity|floatformat:2 }}</b> ·
-    Рекомендация: <b>{{ task.result.recommendation }}</b> ·
-    симуляций: {{ task.result.simulations }}
-  </p>
-</div>
-{% elif task.status == "PENDING" or task.status == "RUNNING" %}
-<p class="card">Расчёт выполняется… <span id="st"></span></p>
-<script>
-// Опрос статуса через API без перезагрузки страницы (заезд 2: пока задача в очереди/выполняется).
-async function poll(){
-  const r = await fetch('/api/tasks/{{ task.pk }}');
-  const j = await r.json();
-  document.getElementById('st').textContent = j.status;
-  if (j.status === 'FINISHED' || j.status === 'FAILED') {
-    location.reload();
-  } else {
-    setTimeout(poll, 1500);
-  }
-}
-poll();
-</script>
-{% endif %}
+<div class="equity-label">ЭКВИТИ ВАШЕЙ РУКИ</div><div class="equity-value">{{ task.result.equity|percent }}<span>%</span></div>
+<div class="probability-bar" role="img" aria-label="Победа {{ task.result.win_probability|percent }} процентов, ничья {{ task.result.tie_probability|percent }} процентов, поражение {{ task.result.loss_probability|percent }} процентов"><span class="win" style="flex-grow:{{ task.result.win_probability|percent }}"></span><span class="tie" style="flex-grow:{{ task.result.tie_probability|percent }}"></span><span class="loss" style="flex-grow:{{ task.result.loss_probability|percent }}"></span></div>
+<dl class="probability-list"><div><dt><i class="legend-dot win"></i>Победа</dt><dd>{{ task.result.win_probability|percent }}%</dd></div><div><dt><i class="legend-dot tie"></i>Ничья</dt><dd>{{ task.result.tie_probability|percent }}%</dd></div><div><dt><i class="legend-dot loss"></i>Поражение</dt><dd>{{ task.result.loss_probability|percent }}%</dd></div></dl>
+<div class="recommendation recommendation-{{ task.result.recommendation|lower }}"><span>РЕКОМЕНДАЦИЯ МОДЕЛИ</span><strong>{{ task.result.recommendation }} ↗</strong></div><p class="result-note">Оценка по случайным рукам соперников и заданной цене колла. Она не учитывает их стиль игры и будущие ставки.</p>
+{% elif task.status == "FAILED" %}<div class="error-banner" role="alert"><h3>Не удалось завершить расчёт</h3><p>{{ task.error }}</p></div><a class="secondary" href="{% url 'task_create' %}">Вернуться к параметрам</a>
+{% else %}<div class="waiting" role="status"><div class="spinner"></div><h3>Моделируем раздачи</h3><p>Результат появится автоматически после завершения расчёта.</p><span id="poll-message">Ожидаем результат…</span></div><div id="poll-status" data-url="/api/tasks/{{ task.pk }}"></div>{% endif %}
+</section></div><a class="text-link back-link" href="{% url 'task_list' %}">← Все расчёты</a>
 {% endblock %}

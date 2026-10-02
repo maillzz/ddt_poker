@@ -1,0 +1,10 @@
+<section class="table-panel" aria-label="Покерный стол">
+  <div class="table-toolbar"><span><i class="live-dot"></i> TEXAS HOLD’EM</span><span id="street-label">PREFLOP</span></div>
+  <div class="felt">
+    <div class="table-watermark">POKER<span>LAB</span><small>PLAY THE PROBABILITIES</small></div>
+    <div class="board-area"><span class="table-label">ОБЩИЕ КАРТЫ</span><div class="card-row" id="board-cards"></div><div class="street-labels"><span>FLOP</span><span>TURN</span><span>RIVER</span></div></div>
+    <div class="pot-display"><span class="chip-stack"><img src="{% load static %}{% static 'poker/kenney/chipGreenWhite.png' %}" alt="" width="32" height="32"><img src="{% static 'poker/kenney/chipWhiteBlue.png' %}" alt="" width="32" height="32"></span><span>БАНК <strong id="pot-display">0</strong></span></div>
+    <div class="hero-area"><div class="card-row" id="hole-cards"></div><span class="hero-label"><i class="live-dot"></i> ВАША РУКА</span></div>
+  </div>
+  <div class="table-bottom"><span id="table-hint">Нажмите на карту, чтобы изменить раздачу</span><span>♠ <span class="red">♥ ♦</span> ♣</span></div>
+</section>
