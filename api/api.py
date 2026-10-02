@@ -52,3 +52,14 @@ def get_task(request, task_id: int):
     except ObjectDoesNotExist:
         raise HttpError(404, "задача не найдена") from None
     return {"id": task.id, "status": getattr(task, "status", "PENDING")}
+
+
+@api.get("/tasks/{task_id}/result")
+def get_result(request, task_id: int):
+    try:
+        task = services.get_task(task_id, owner=request.user)
+    except ObjectDoesNotExist:
+        raise HttpError(404, "задача не найдена") from None
+    if task.status != "FINISHED":
+        raise HttpError(409, f"ещё не готова: {task.status}")
+    return task.result

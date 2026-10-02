@@ -32,9 +32,10 @@ def test_anonymous_create_task_returns_401():
     assert Task.objects.count() == 0
 
 
-def test_anonymous_get_task_returns_401(user):
+@pytest.mark.parametrize("suffix", ["", "/result"])
+def test_anonymous_get_task_returns_401(user, suffix):
     task = services.create_task("чужая", {}, owner=user)
-    r = Client().get(f"/api/tasks/{task.pk}")
+    r = Client().get(f"/api/tasks/{task.pk}{suffix}")
     assert r.status_code == 401
 
 

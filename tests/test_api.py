@@ -227,3 +227,54 @@ def test_cards_normalized_to_canonical_case(client, monkeypatch):
     assert r.status_code == 202
     wait_status(client, r.json()["id"], "FINISHED")
     assert Task.objects.get(pk=r.json()["id"]).params["hole_cards"] == ["As", "Kh"]
+
+
+# --- GET /api/tasks/{id}/result ------------------------------------------------
+# Задачи создаются сервисом напрямую, без расчёта: статус выставляем сами.
+
+RESULT = {"win_probability": 0.85, "equity": 0.86, "recommendation": "RAISE"}
+
+
+def make_task(owner, status, result=None):
+    from web import services
+
+    task = services.create_task("результат", {}, owner=owner)
+    task.status, task.result = status, result
+    task.save()
+    return task
+
+
+def test_result_of_own_finished_task_returns_200(client, user):
+    task = make_task(user, "FINISHED", RESULT)
+    r = client.get(f"/api/tasks/{task.pk}/result")
+    assert r.status_code == 200
+    assert r.json() == RESULT
+
+
+def test_result_of_other_users_task_returns_404(client, django_user_model):
+    other = django_user_model.objects.create_user(username="user2", password="test12345")
+    task = make_task(other, "FINISHED", RESULT)
+    r = client.get(f"/api/tasks/{task.pk}/result")
+    assert r.status_code == 404
+    assert r.json() == {"detail": "задача не найдена"}
+
+
+def test_result_of_missing_task_returns_404(client):
+    assert client.get("/api/tasks/999/result").status_code == 404
+
+
+@pytest.mark.parametrize("status", ["PENDING", "RUNNING"])
+def test_result_of_unfinished_task_returns_409(client, user, status):
+    task = make_task(user, status)
+    r = client.get(f"/api/tasks/{task.pk}/result")
+    assert r.status_code == 409
+    assert r.json() == {"detail": f"ещё не готова: {status}"}
+
+
+def test_result_after_real_calculation(client):
+    """Сквозной путь: POST → расчёт в фоне → FINISHED → /result отдаёт результат ядра."""
+    task_id = post_task(client).json()["id"]
+    wait_status(client, task_id, "FINISHED")
+    r = client.get(f"/api/tasks/{task_id}/result")
+    assert r.status_code == 200
+    assert set(r.json()) >= {"win_probability", "equity", "recommendation"}
