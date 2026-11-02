@@ -45,6 +45,11 @@ def create_task(request, payload: TaskIn):
     return Response({"id": task.id, "status": getattr(task, "status", "PENDING")}, status=202)
 
 
+@api.get("/tasks", response=list[TaskOut])
+def list_tasks(request):
+    return services.list_tasks(owner=request.user)
+
+
 @api.get("/tasks/{task_id}")
 def get_task(request, task_id: int):
     try:
