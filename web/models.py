@@ -4,10 +4,10 @@ from django.db import models
 
 class Task(models.Model):
     STATUS_CHOICES = [
-        ("PENDING", "Pending"),
-        ("RUNNING", "Running"),
-        ("FINISHED", "Finished"),
-        ("FAILED", "Failed"),
+        ("PENDING", "Ожидает выполнения"),
+        ("RUNNING", "Выполняется"),
+        ("FINISHED", "Завершена"),
+        ("FAILED", "Ошибка"),
     ]
     # Владелец: задачу видит и получает только он (фильтр — в web/services.py).
     # null=True — только для задач, созданных до появления владельца; они не видны никому.

@@ -33,7 +33,10 @@ def task_create(request):
                     call_amount=form.cleaned_data["call_amount"] or 0,
                 )
             except ValidationError as exc:
-                form.add_error(None, str(exc))
+                for error in exc.errors(include_url=False, include_input=False):
+                    message = error["msg"].removeprefix("Value error, ")
+                    field = error["loc"][0] if error["loc"] else None
+                    form.add_error(field if field in form.fields else None, message)
             else:
                 name = "{} против {}".format(
                     " ".join(validated.hole_cards), validated.opponents

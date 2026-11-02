@@ -22,10 +22,10 @@ def test_result_displays_probability_as_percentage(client, user):
     response = client.get(f"/tasks/{task.pk}/")
     assert response.status_code == 200
     html = response.content.decode()
-    assert "81.2%" in html
-    assert "1.2%" in html
-    assert "17.6%" in html
-    assert '81.8<span>%</span>' in html
+    assert "81.23%" in html
+    assert "1.20%" in html
+    assert "17.57%" in html
+    assert '81.83<span>%</span>' in html
     assert 'id="task-params"' in html
 
 
@@ -39,3 +39,32 @@ def test_duplicate_cards_keep_bound_form_without_creating_task(client):
     assert response.context["form"].errors
     assert 'value="As As"' in response.content.decode()
     assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_form_validation_is_short_and_readable(client):
+    response = client.post("/tasks/new/", {
+        "hole_cards": "As As", "opponents": 1, "simulations": 100,
+    })
+    html = response.content.decode()
+    assert "карты повторяются: As" in html
+    assert "validation error" not in html
+    assert "input_value" not in html
+    assert "errors.pydantic.dev" not in html
+    assert Task.objects.count() == 0
+
+
+
+@pytest.mark.django_db
+def test_finished_status_and_recommendation_are_russian(client, user):
+    task = Task.objects.create(
+        owner=user, name="test", status="FINISHED",
+        params={"hole_cards": ["As", "Ah"], "opponents": 1},
+        result={"recommendation": "CHECK", "equity": 0.85},
+    )
+    html = client.get(f"/tasks/{task.pk}/").content.decode()
+    assert "Завершена" in html
+    assert "Пропустить ход" in html
+    assert "Finished" not in html
+    assert "CHECK" not in html
+    assert "Завершена" in client.get("/").content.decode()

@@ -22,12 +22,12 @@ class PokerTaskForm(forms.Form):
         min_value=100,
         max_value=200000,
     )
-    seed = forms.IntegerField(label="Seed", required=False)
+    seed = forms.IntegerField(label="Начальное значение генератора", required=False)
     pot_size = forms.FloatField(
-        label="Размер банка", initial=0, min_value=0, required=False
+        label="Размер банка", initial=0, min_value=0, max_value=1_000_000, required=False
     )
     call_amount = forms.FloatField(
-        label="Сумма для колла", initial=0, min_value=0, required=False
+        label="Сумма для колла", initial=0, min_value=0, max_value=1_000_000, required=False
     )
 
     def clean_hole_cards(self):

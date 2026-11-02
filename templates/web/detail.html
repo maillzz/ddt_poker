@@ -1,15 +1,28 @@
 {% extends "base.html" %}{% load poker_display %}
-{% block title %}Расчёт #{{ task.pk }} · Poker Lab{% endblock %}
+{% block title %}Расчёт #{{ task.pk }} · Покер Лаб{% endblock %}
 {% block content %}
 <div class="page-heading"><div><p class="eyebrow">АНАЛИЗ РАЗДАЧИ / #{{ task.pk }}</p><h1>Ваша раздача в цифрах<span class="accent">.</span></h1><p class="subtitle">{{ task.name }} · {{ task.params.simulations }} симуляций · {{ task.created_at|date:"d.m.Y H:i" }}</p></div><a class="primary" href="{% url 'task_create' %}">Новая раздача ↗</a></div>
 {{ task.params|json_script:"task-params" }}
-<div class="workspace result-workspace"><div>{% include "web/table.html" %}<div class="under-table"><span>Оппонентов: <strong>{{ task.params.opponents }}</strong></span><span>Банк: <strong>{{ task.params.pot_size }}</strong></span><span>Сумма колла: <strong>{{ task.params.call_amount }}</strong></span></div></div>
+<div class="workspace result-workspace"><div>{% include "web/table.html" %}<div class="under-table"><span>Оппонентов: <strong>{{ task.params.opponents }}</strong></span><span>Банк: <strong>{{ task.params.pot_size|floatformat:2 }}</strong></span><span>Сумма колла: <strong>{{ task.params.call_amount|floatformat:2 }}</strong></span></div>
+<section class="panel parameters-panel"><h2>Параметры расчёта</h2><div class="table-scroll"><table class="data-table"><tbody>
+<tr><th scope="row">Карманные карты</th><td>{{ task.params.hole_cards|join:" " }}</td></tr>
+<tr><th scope="row">Общие карты</th><td>{{ task.params.community|join:" "|default:"Не заданы" }}</td></tr>
+<tr><th scope="row">Соперники</th><td>{{ task.params.opponents }}</td></tr>
+<tr><th scope="row">Число симуляций</th><td>{{ task.params.simulations }}</td></tr>
+<tr><th scope="row">Начальное значение генератора</th><td>{{ task.params.seed|default_if_none:"Случайное" }}</td></tr>
+<tr><th scope="row">Размер банка</th><td>{{ task.params.pot_size|floatformat:2 }}</td></tr>
+<tr><th scope="row">Сумма для колла</th><td>{{ task.params.call_amount|floatformat:2 }}</td></tr>
+</tbody></table></div></section></div>
 <section class="panel result-panel"><div class="panel-heading"><h2>Результат анализа</h2><span class="status status-{{ task.status|lower }}">{{ task.get_status_display }}</span></div>
 {% if task.status == "FINISHED" %}
 <div class="equity-label">ЭКВИТИ ВАШЕЙ РУКИ</div><div class="equity-value">{{ task.result.equity|percent }}<span>%</span></div>
 <div class="probability-bar" role="img" aria-label="Победа {{ task.result.win_probability|percent }} процентов, ничья {{ task.result.tie_probability|percent }} процентов, поражение {{ task.result.loss_probability|percent }} процентов"><span class="win" style="flex-grow:{{ task.result.win_probability|percent }}"></span><span class="tie" style="flex-grow:{{ task.result.tie_probability|percent }}"></span><span class="loss" style="flex-grow:{{ task.result.loss_probability|percent }}"></span></div>
-<dl class="probability-list"><div><dt><i class="legend-dot win"></i>Победа</dt><dd>{{ task.result.win_probability|percent }}%</dd></div><div><dt><i class="legend-dot tie"></i>Ничья</dt><dd>{{ task.result.tie_probability|percent }}%</dd></div><div><dt><i class="legend-dot loss"></i>Поражение</dt><dd>{{ task.result.loss_probability|percent }}%</dd></div></dl>
-<div class="recommendation recommendation-{{ task.result.recommendation|lower }}"><span>РЕКОМЕНДАЦИЯ МОДЕЛИ</span><strong>{{ task.result.recommendation }} ↗</strong></div><p class="result-note">Оценка по случайным рукам соперников и заданной цене колла. Она не учитывает их стиль игры и будущие ставки.</p>
+<table class="data-table"><caption class="sr-only">Вероятности исходов</caption><tbody>
+<tr><th scope="row"><i class="legend-dot win"></i>Победа</th><td>{{ task.result.win_probability|percent }}%</td></tr>
+<tr><th scope="row"><i class="legend-dot tie"></i>Ничья</th><td>{{ task.result.tie_probability|percent }}%</td></tr>
+<tr><th scope="row"><i class="legend-dot loss"></i>Поражение</th><td>{{ task.result.loss_probability|percent }}%</td></tr>
+</tbody></table>
+<div class="recommendation recommendation-{{ task.result.recommendation|lower }}"><span>РЕКОМЕНДАЦИЯ МОДЕЛИ</span><strong>{{ task.result.recommendation|recommendation_label }} ↗</strong></div><p class="result-note">Оценка по случайным рукам соперников и заданной цене колла. Она не учитывает их стиль игры и будущие ставки.</p>
 {% elif task.status == "FAILED" %}<div class="error-banner" role="alert"><h3>Не удалось завершить расчёт</h3><p>{{ task.error }}</p></div><a class="secondary" href="{% url 'task_create' %}">Вернуться к параметрам</a>
 {% else %}<div class="waiting" role="status"><div class="spinner"></div><h3>Моделируем раздачи</h3><p>Результат появится автоматически после завершения расчёта.</p><span id="poll-message">Ожидаем результат…</span></div><div id="poll-status" data-url="/api/tasks/{{ task.pk }}"></div>{% endif %}
 </section></div><a class="text-link back-link" href="{% url 'task_list' %}">← Все расчёты</a>

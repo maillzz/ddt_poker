@@ -48,7 +48,7 @@
       });
     }
     const count = cards.board.filter(Boolean).length;
-    const street = count === 0 ? 'PREFLOP' : count === 3 ? 'FLOP' : count === 4 ? 'TURN' : count === 5 ? 'RIVER' : `БОРД · ${count} КАРТЫ`;
+    const street = count === 0 ? 'ПРЕФЛОП' : count === 3 ? 'ФЛОП' : count === 4 ? 'ТЁРН' : count === 5 ? 'РИВЕР' : `БОРД · ${count} КАРТЫ`;
     const streetLabel = document.getElementById('street-label');
     if (streetLabel) streetLabel.textContent = street;
   }
