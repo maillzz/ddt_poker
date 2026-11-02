@@ -15,5 +15,5 @@ def get_queue():
 def enqueue_task(task_id: int) -> None:
     from web.models import Task
 
-    Task.objects.filter(pk=task_id).update(status=Task.Status.QUEUED)
+    Task.objects.filter(pk=task_id).update(status="PENDING")
     get_queue().enqueue("web.services.execute_task", task_id, job_timeout=600)
