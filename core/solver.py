@@ -10,32 +10,12 @@ from treys import Card, Deck, Evaluator
 VERSION = "1.0.0"
 
 _EVALUATOR = Evaluator()
-_RANKS = "23456789TJQKA"
 
 
 def _to_treys(card: str) -> int:
     """'As' / 'th' / 'Td' -> внутреннее представление treys."""
     rank, suit = card[0].upper(), card[1].lower()
     return Card.new(rank + suit)
-
-
-def hand_rank(cards: list[str]) -> tuple:
-    """Упрощённая оценка ровно 5 карт для базовых юнит-тестов
-    (например, «пара сильнее старшей карты»). Различает только «пара / не пара».
-
-    В расчёте НЕ используется: полная оценка 5–7 карт (стриты, флеши, каре…)
-    в симуляции выполняется через treys.Evaluator — см. run().
-    """
-    rank_order = {r: i for i, r in enumerate(_RANKS, start=2)}
-    card_ranks = sorted([rank_order[c[0].upper()] for c in cards], reverse=True)
-    counts = {r: card_ranks.count(r) for r in set(card_ranks)}
-    sorted_by_freq = sorted(
-        card_ranks, key=lambda r: (counts[r], r), reverse=True
-    )
-
-    if max(counts.values()) == 2:
-        return (2, sorted_by_freq)
-    return (1, sorted_by_freq)
 
 
 def _recommend(equity: float, pot_size: float, call_amount: float) -> str:
@@ -45,7 +25,7 @@ def _recommend(equity: float, pot_size: float, call_amount: float) -> str:
     рейзить на грани безубыточности.
     """
     if call_amount <= 0:
-        return "CALL" if equity >= 0.5 else "CHECK"  # ставить нечего — сбрасывать незачем
+        return "CHECK"  # доплачивать нечего при любой силе руки
 
     pot_odds = call_amount / (pot_size + call_amount)
     if equity >= pot_odds + 0.15:

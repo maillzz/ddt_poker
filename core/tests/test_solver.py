@@ -1,13 +1,5 @@
 # core/tests/test_solver.py
-from core.solver import _recommend, hand_rank, run
-
-PAIR = ["As", "Ad", "7c", "5h", "2d"]  # пара тузов
-HIGH = ["Ks", "Qd", "9c", "5h", "2d"]  # только старшая карта
-
-
-def test_pair_beats_high_card():
-    # эталон: правило игры — известно до первой строки кода
-    assert hand_rank(PAIR) > hand_rank(HIGH)
+from core.solver import _recommend, run
 
 
 def test_aa_wins_about_85_percent():
@@ -60,3 +52,13 @@ def test_royal_flush_always_wins():
         }
     )
     assert r["win_probability"] == 1.0
+
+
+def test_free_action_with_winning_hand_is_check():
+    result = run({
+        "hole_cards": ["As", "Ks"], "community": ["Qs", "Js", "Ts", "2h", "3d"],
+        "opponents": 1, "simulations": 100, "seed": 1, "call_amount": 0,
+    })
+    assert result["win_probability"] == 1
+    assert result["recommendation"] == "CHECK"
+
