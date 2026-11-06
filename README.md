@@ -74,9 +74,9 @@ Compose запускает PostgreSQL, Redis, веб-приложение и в�
 поставьте в `.env` `USE_QUEUE=1`, `REDIS_URL=redis://localhost:6379/0` и в отдельном терминале запустите
 `python manage.py rqworker`. Для штатного воркера RQ используйте Linux, WSL или Docker.
 
-Локальный `runserver` отдаёт общий CSS и JS при `DEBUG=1`. Для запуска с gunicorn необходимо
-настроить раздачу статики веб-сервером из `STATIC_ROOT` после `python manage.py collectstatic --noinput`.
-В текущем Compose отдельного сервиса раздачи статики нет.
+Статику (общий CSS и JS) в Docker и под gunicorn отдаёт WhiteNoise из `STATIC_ROOT`;
+`collectstatic --noinput` запускается при сборке образа (см. Dockerfile). Локальный `runserver`
+отдаёт её сам при `DEBUG=1`.
 
 ## Вычислительное ядро из командной строки
 
